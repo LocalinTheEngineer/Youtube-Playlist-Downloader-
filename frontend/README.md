@@ -1,8 +1,10 @@
 # Playlist Studio arayüzü
 
 React, TypeScript ve Vite ile yerel indirme uygulamasının arayüzü.
-Bağlantı inceleme, video seçimi ve bağımlılık durumu ilk aşamada uygulanmıştır.
-İndirmeyi başlatma, kalite ayarları ve canlı kuyruk ekranı sonraki aşamadadır.
+Bağlantı inceleme, video seçimi, bağımlılık durumu, kalite/format ve hedef
+alt klasör ayarları uygulanmıştır. Seçilen videolar API üzerinden kuyruğa
+eklenir. Kuyruk iki saniyede bir yenilenir; iptal ve başarısız videoları
+yeniden deneme desteklenir. SSE istemcisi sonraki aşamadadır.
 
 Node.js 22.12+ veya 24 kullanın. Backend'i proje kökündeki README'ye göre
 `127.0.0.1:8000` üzerinde başlatın. Bu klasörde:

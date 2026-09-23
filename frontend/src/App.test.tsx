@@ -3,13 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
-import { inspectMedia, checkSystem } from './services/api'
+import { inspectMedia, checkSystem, createDownload, listDownloads, cancelDownload, retryDownload } from './services/api'
 import { useDownloadStore } from './stores/downloadStore'
 import type { MediaPreview } from './types/media'
+import type { DownloadJob } from './types/download'
 
 vi.mock('./services/api', async (importOriginal) => ({
   ...await importOriginal<typeof import('./services/api')>(),
-  inspectMedia: vi.fn(), checkSystem: vi.fn(),
+  inspectMedia: vi.fn(), checkSystem: vi.fn(), createDownload: vi.fn(), listDownloads: vi.fn(), cancelDownload: vi.fn(), retryDownload: vi.fn(),
 }))
 
 const preview: MediaPreview = {
@@ -25,7 +26,9 @@ const preview: MediaPreview = {
 beforeEach(() => {
   vi.clearAllMocks()
   useDownloadStore.getState().reset()
+  useDownloadStore.setState({ formatPreset: 'best', outputDirectory: '', activeJobId: null })
   vi.mocked(checkSystem).mockResolvedValue({ ready: true, checked_at: '2026-09-23', components: [] })
+  vi.mocked(listDownloads).mockResolvedValue([])
 })
 
 function renderApp() {
@@ -71,4 +74,68 @@ test('shows a single video as a selectable row', async () => {
   await user.click(screen.getByRole('button', { name: 'İncele' }))
   await waitFor(() => expect(screen.getByRole('checkbox', { name: 'İlk video' })).toBeChecked())
   expect(screen.getByText('TEK VİDEO')).toBeVisible()
+})
+
+const job: DownloadJob = {
+  id: 'job-one', playlist_title: 'Favoriler', status: 'queued', total_items: 1,
+  completed_items: 0, failed_items: 0, output_directory: 'downloads/Müzik', format_preset: '720p', error_message: null,
+  items: [{ id: 1, video_id: 'one', title: 'İlk video', status: 'queued', progress: 0, downloaded_bytes: 0, total_bytes: null, speed: null, eta: null, error_message: null }],
+}
+
+test('submits the inspected source with selected IDs, quality and folder', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  vi.mocked(createDownload).mockImplementation(async () => {
+    vi.mocked(listDownloads).mockResolvedValue([job])
+    return job
+  })
+  const user = renderApp()
+  await user.click(screen.getByRole('checkbox', { name: 'İkinci video' }))
+  await user.selectOptions(screen.getByLabelText('Kalite'), '720p')
+  await user.type(screen.getByLabelText('Hedef alt klasör'), 'Müzik')
+  await waitFor(() => expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
+  expect(await screen.findByText('İş kuyruğa eklendi. İlerlemeyi aşağıdan takip edebilirsin.')).toBeVisible()
+  expect(createDownload).toHaveBeenCalledTimes(1)
+  expect(vi.mocked(createDownload).mock.calls[0][0]).toEqual({ url: 'https://youtube.com/playlist?list=PLtest', video_ids: ['one'], format_preset: '720p', output_directory: 'Müzik' })
+  expect(useDownloadStore.getState().activeJobId).toBe(job.id)
+  expect(await screen.findByRole('heading', { name: 'İndirmeler' })).toBeVisible()
+})
+
+test('rejects folder traversal and disables submit with no selection', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  const user = renderApp()
+  await user.type(screen.getByLabelText('Hedef alt klasör'), '../outside')
+  await waitFor(() => expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeEnabled())
+  await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('alt klasör adı')
+  expect(createDownload).not.toHaveBeenCalled()
+  await user.click(screen.getByRole('checkbox', { name: 'Tümünü seç' }))
+  expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeDisabled()
+})
+
+test('audio mode uses the audio preset and fixes its bitrate', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  const user = renderApp()
+  await user.selectOptions(screen.getByLabelText('Çıktı biçimi'), 'audio')
+  expect(screen.getByLabelText('Kalite')).toBeDisabled()
+  expect(useDownloadStore.getState().formatPreset).toBe('audio')
+})
+
+test('requests cancellation and keeps pending cancellation distinct from completion', async () => {
+  vi.mocked(listDownloads).mockResolvedValue([{ ...job, status: 'downloading' }])
+  vi.mocked(cancelDownload).mockResolvedValue({ id: job.id, status: 'cancel_requested' })
+  const user = renderApp()
+  await user.click(await screen.findByRole('button', { name: 'İptal et' }))
+  expect(await screen.findByText('İptal bekleniyor')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'İptal istendi' })).toBeDisabled()
+  expect(vi.mocked(cancelDownload).mock.calls[0][0]).toBe(job.id)
+})
+
+test('retry tracks the new job rather than changing the failed job', async () => {
+  vi.mocked(listDownloads).mockResolvedValue([{ ...job, status: 'failed', failed_items: 1 }])
+  vi.mocked(retryDownload).mockResolvedValue({ ...job, id: 'new-job' })
+  const user = renderApp()
+  await user.click(await screen.findByRole('button', { name: 'Başarısız videoları yeniden dene' }))
+  await waitFor(() => expect(useDownloadStore.getState().activeJobId).toBe('new-job'))
+  expect(vi.mocked(retryDownload).mock.calls[0][0]).toBe(job.id)
 })

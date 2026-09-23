@@ -2,11 +2,13 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowDownToLine, Check, ChevronDown, CircleAlert, HardDrive, Layers, LoaderCircle } from 'lucide-react'
 import { UrlInput } from './components/UrlInput'
 import { PlaylistPreview } from './components/PlaylistPreview'
+import { DownloadSettings } from './components/DownloadSettings'
+import { DownloadQueue } from './components/DownloadQueue'
 import { checkSystem, errorMessage, inspectMedia } from './services/api'
 import { useDownloadStore } from './stores/downloadStore'
 
 export default function App() {
-  const { media, setMedia, reset } = useDownloadStore()
+  const { media, sourceUrl, setMedia, reset } = useDownloadStore()
   const system = useQuery({ queryKey: ['system'], queryFn: checkSystem, retry: false, staleTime: 60_000, refetchOnWindowFocus: false })
   const inspection = useMutation({ mutationFn: inspectMedia, onSuccess: (result, url) => setMedia(result, url) })
   return <div className="app-shell">
@@ -23,8 +25,9 @@ export default function App() {
             {inspection.isError && <div className="error" role="alert"><CircleAlert size={18} /><span>{errorMessage(inspection.error)}</span></div>}
           </section>
           {inspection.isPending && <div className="loading-preview" role="status"><LoaderCircle className="spin" size={26} /><p>Videoların bilgileri alınıyor…</p><span>Uzun playlistlerde bu işlem biraz sürebilir.</span></div>}
-          {media && <PlaylistPreview />}
+          {media && <><PlaylistPreview /><DownloadSettings key={sourceUrl} ready={system.data?.ready === true} /></>}
           {!media && !inspection.isPending && <section className="empty-preview"><div className="empty-art" aria-hidden="true"><div className="art-card back" /><div className="art-card front"><Layers size={32} /><div className="art-line" /><div className="art-line short" /></div></div><h2>Bir bağlantıyla başlar.</h2><p>Videoların burada listelenecek.<br />İstersen tümünü, istersen yalnızca favorilerini seç.</p><span className="empty-tag">VİDEO & PLAYLIST</span></section>}
+          <DownloadQueue />
         </div>
         <aside>
           <section className="info-card"><span className="info-icon"><HardDrive size={23} /></span><h2>Bilgisayarında kalır.</h2><p>İndirmelerin kendi diskine kaydedilir. Bir hesap açmana veya şifre paylaşmana gerek yok.</p><div className="info-divider" /><p className="small-note">Yalnızca indirme hakkına sahip olduğun içerikleri kullan.</p></section>

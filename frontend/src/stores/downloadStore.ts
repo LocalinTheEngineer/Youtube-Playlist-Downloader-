@@ -1,10 +1,17 @@
 import { create } from 'zustand'
 import type { MediaPreview } from '../types/media'
+import type { FormatPreset } from '../types/download'
 
 interface DownloadState {
   media: MediaPreview | null
   sourceUrl: string
   selectedIds: string[]
+  formatPreset: FormatPreset
+  outputDirectory: string
+  activeJobId: string | null
+  setFormatPreset: (preset: FormatPreset) => void
+  setOutputDirectory: (directory: string) => void
+  setActiveJob: (id: string) => void
   setMedia: (media: MediaPreview, sourceUrl: string) => void
   toggle: (id: string) => void
   selectAll: (checked: boolean) => void
@@ -13,6 +20,10 @@ interface DownloadState {
 
 export const useDownloadStore = create<DownloadState>((set) => ({
   media: null, sourceUrl: '', selectedIds: [],
+  formatPreset: 'best', outputDirectory: '', activeJobId: null,
+  setFormatPreset: (formatPreset) => set({ formatPreset }),
+  setOutputDirectory: (outputDirectory) => set({ outputDirectory }),
+  setActiveJob: (activeJobId) => set({ activeJobId }),
   setMedia: (media, sourceUrl) => set({
     media, sourceUrl,
     selectedIds: [...new Set(media.entries.filter((entry) => entry.available && entry.id).map((entry) => entry.id!))],
