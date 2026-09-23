@@ -86,6 +86,12 @@ eklenmez.
 ```
 
 API belgeleri `http://127.0.0.1:8000/docs` adresindedir.
+`GET /api/system/check`, yt-dlp, yt-dlp-ejs, FFmpeg, FFprobe ve bu projede
+kullanılan Node.js çalışma ortamının sürüm ve hazırlık durumunu döndürür.
+Node.js 22 veya üzeri gerekir. Eksik veya çalışmayan bağımlılıklar `ready: false`
+ve Türkçe açıklamayla bildirilir; tanılama endpoint'i HTTP 200 döndürür.
+Kontrol backend açılışında da çalışır. Kurulumdan sonra PATH değişikliğinin
+görülmesi için backend'i yeni bir terminalden yeniden başlatın.
 `POST /api/media/inspect`, `{"url":"https://www.youtube.com/watch?v=VIDEO_ID"}`
 gövdesiyle video veya playlist metadata'sını indirmeden inceler.
 `POST /api/downloads` indirilecek bağlantıyı, isteğe bağlı video ID listesini,

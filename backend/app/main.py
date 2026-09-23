@@ -2,6 +2,8 @@
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+import asyncio
+import logging
 
 from fastapi import FastAPI
 from sqlalchemy import update
@@ -11,11 +13,18 @@ from app.models import DownloadItem, DownloadJob, JobStatus
 from app.workers.download_worker import download_queue
 from app.api.playlist_routes import router as playlist_router
 from app.api.download_routes import router as download_router
+from app.api.system_routes import router as system_router
+from app.services.system_service import check_system
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Recover interrupted work, then run the single local queue worker."""
+    _app.state.system_check = await asyncio.to_thread(check_system)
+    if not _app.state.system_check.ready:
+        logging.getLogger(__name__).warning(
+            "Sistem bağımlılıkları hazır değil; ayrıntılar için /api/system/check adresini açın."
+        )
     now = datetime.now(timezone.utc)
     with SessionLocal.begin() as session:
         session.execute(
@@ -55,6 +64,7 @@ app = FastAPI(
 )
 app.include_router(playlist_router)
 app.include_router(download_router)
+app.include_router(system_router)
 
 
 @app.get("/", tags=["system"])

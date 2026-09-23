@@ -27,10 +27,12 @@ def session_factory(tmp_path):
 
 @pytest.fixture
 def client(session_factory, monkeypatch) -> Generator[TestClient, None, None]:
+    from types import SimpleNamespace
     import app.main as application
     import app.workers.download_worker as worker
 
     monkeypatch.setattr(application, "SessionLocal", session_factory)
+    monkeypatch.setattr(application, "check_system", lambda: SimpleNamespace(ready=True))
     monkeypatch.setattr(worker, "SessionLocal", session_factory)
     monkeypatch.setattr(download_routes, "SessionLocal", session_factory)
     def override_session():
