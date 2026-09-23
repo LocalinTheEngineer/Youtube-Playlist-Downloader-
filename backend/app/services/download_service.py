@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Event
 from typing import Any, Callable
 
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadCancelled
 
 from app.services.format_service import FORMAT_PRESETS
 from app.services.url_validator import validate_youtube_url
@@ -18,8 +20,18 @@ def download_playlist(
     output_dir: Path,
     progress_hook: ProgressHook,
     format_preset: str = "best",
+    cancel_event: Event | None = None,
 ) -> int:
     """Download a video or playlist, continuing when an individual item fails."""
+    def check_cancelled(_data=None) -> None:
+        if cancel_event is not None and cancel_event.is_set():
+            raise DownloadCancelled("İndirme iptal edildi.")
+
+    def report_progress(data: dict[str, Any]) -> None:
+        check_cancelled()
+        progress_hook(data)
+
+    check_cancelled()
     url = validate_youtube_url(url)
     if format_preset not in FORMAT_PRESETS:
         raise ValueError("Desteklenmeyen kalite/format seçimi.")
@@ -40,7 +52,10 @@ def download_playlist(
         "overwrites": False,
         "noprogress": True,
         "windowsfilenames": True,
-        "progress_hooks": [progress_hook],
+        "progress_hooks": [report_progress],
+        "postprocessor_hooks": [check_cancelled],
+        "socket_timeout": 15,
+        "retries": 3,
         "download_archive": str(output_dir / ".downloaded.txt"),
     }
     if format_preset == "audio":
@@ -55,5 +70,7 @@ def download_playlist(
         options["merge_output_format"] = "mp4"
 
     with YoutubeDL(options) as downloader:
-        return int(downloader.download([url]) or 0)
+        result = int(downloader.download([url]) or 0)
+    check_cancelled()
+    return result
 

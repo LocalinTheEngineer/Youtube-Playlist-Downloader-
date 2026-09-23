@@ -6,7 +6,6 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from app.api import download_routes
 from app.database import Base, get_session
@@ -15,11 +14,10 @@ from app.models import DownloadItem, DownloadJob, JobStatus
 
 
 @pytest.fixture
-def session_factory():
+def session_factory(tmp_path):
     engine = create_engine(
-        "sqlite://",
+        f"sqlite:///{(tmp_path / 'test.db').as_posix()}",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
@@ -28,7 +26,13 @@ def session_factory():
 
 
 @pytest.fixture
-def client(session_factory) -> Generator[TestClient, None, None]:
+def client(session_factory, monkeypatch) -> Generator[TestClient, None, None]:
+    import app.main as application
+    import app.workers.download_worker as worker
+
+    monkeypatch.setattr(application, "SessionLocal", session_factory)
+    monkeypatch.setattr(worker, "SessionLocal", session_factory)
+    monkeypatch.setattr(download_routes, "SessionLocal", session_factory)
     def override_session():
         with session_factory() as session:
             yield session
@@ -116,7 +120,7 @@ def test_worker_processes_persisted_job_and_progress(session_factory, monkeypatc
         session.commit()
         job_id = job.id
 
-    def mocked_download(url, output_dir, progress_hook, preset):
+    def mocked_download(url, output_dir, progress_hook, preset, *, cancel_event):
         assert url.endswith("abc12345678")
         assert preset == "best"
         progress_hook(
@@ -178,3 +182,113 @@ def test_job_query_endpoints_and_terminal_sse(session_factory, client, monkeypat
     assert events.status_code == 200
     assert "event: progress" in events.text
     assert '"status": "completed"' in events.text
+
+
+def test_cancel_queued_job_is_idempotent(session_factory, client):
+    with session_factory() as session:
+        job = DownloadJob(
+            source_url="https://youtu.be/abc12345678", output_directory="downloads",
+            total_items=1, items=[DownloadItem(video_id="abc12345678", title="Queued")],
+        )
+        session.add(job)
+        session.commit()
+        job_id = job.id
+    for _ in range(2):
+        response = client.post(f"/api/downloads/{job_id}/cancel")
+        assert response.status_code == 202
+        assert response.json()["status"] == "cancelled"
+    with session_factory() as session:
+        job = session.get(DownloadJob, job_id)
+        assert job.status == "cancelled"
+        assert job.finished_at is not None
+        assert job.items[0].status == "cancelled"
+
+
+def test_active_cancellation_preserves_completed_items(session_factory, monkeypatch, tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    import app.workers.download_worker as worker
+
+    monkeypatch.setattr(worker, "SessionLocal", session_factory)
+    with session_factory() as session:
+        job = DownloadJob(
+            source_url="https://youtube.com/playlist?list=PLtest", output_directory=str(tmp_path),
+            total_items=3,
+            items=[DownloadItem(video_id=f"video{i}", title=f"Video {i}") for i in range(3)],
+        )
+        session.add(job)
+        session.commit()
+        job_id = job.id
+    entered = Event()
+    calls = []
+
+    def fake_download(url, output_dir, hook, preset, *, cancel_event):
+        calls.append(url)
+        if len(calls) == 1:
+            return 0
+        entered.set()
+        assert cancel_event.wait(5), "worker did not receive cancellation"
+        hook({"status": "downloading", "downloaded_bytes": 1})
+        pytest.fail("hook must stop the cancelled download")
+
+    monkeypatch.setattr(worker, "download_playlist", fake_download)
+    queue = worker.DownloadQueue()
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(queue._process_job, job_id)
+        assert entered.wait(5)
+        assert queue.cancel(job_id) is False
+        future.result(timeout=5)
+    with session_factory() as session:
+        job = session.get(DownloadJob, job_id)
+        assert job.status == "cancelled"
+        assert job.completed_items == 1
+        assert job.failed_items == 0
+        assert [item.status for item in job.items] == ["completed", "cancelled", "cancelled"]
+    assert len(calls) == 2
+
+
+def test_retry_creates_new_job_only_for_unfinished_items(session_factory, client, monkeypatch):
+    with session_factory() as session:
+        original = DownloadJob(
+            source_url="https://youtube.com/playlist?list=PLtest",
+            output_directory=str(download_routes.DOWNLOAD_ROOT), status="failed",
+            total_items=2, completed_items=1, failed_items=1,
+            items=[
+                DownloadItem(video_id="first", title="Complete", status="completed", progress=100),
+                DownloadItem(video_id="second", title="Failed", status="failed", error_message="old"),
+            ],
+        )
+        session.add(original)
+        session.commit()
+        original_id = original.id
+    enqueued = []
+
+    async def record(job_id):
+        enqueued.append(job_id)
+
+    monkeypatch.setattr(download_routes, "enqueue_download", record)
+    response = client.post(f"/api/downloads/{original_id}/retry")
+    assert response.status_code == 202, response.text
+    new = response.json()
+    assert new["id"] != original_id
+    assert enqueued == [new["id"]]
+    assert new["status"] == "queued"
+    assert new["total_items"] == 1
+    assert new["items"][0]["video_id"] == "second"
+    assert new["items"][0]["error_message"] is None
+    assert new["items"][0]["progress"] == 0
+    with session_factory() as session:
+        original = session.get(DownloadJob, original_id)
+        assert original.status == "failed"
+        assert original.items[1].error_message == "old"
+
+
+@pytest.mark.parametrize("operation", ["cancel", "retry"])
+def test_terminal_job_operations_reject_completed_and_missing(session_factory, client, operation):
+    with session_factory() as session:
+        job = DownloadJob(source_url="https://youtu.be/example", output_directory="downloads", status="completed")
+        session.add(job)
+        session.commit()
+        job_id = job.id
+    assert client.post(f"/api/downloads/{job_id}/{operation}").status_code == 409
+    assert client.post(f"/api/downloads/missing/{operation}").status_code == 404

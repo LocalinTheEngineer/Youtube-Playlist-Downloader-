@@ -2,8 +2,8 @@
 
 Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
 geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
-bulunur; FastAPI backend'i, SQLite ile indirme geçmişi ve React arayüzü sonraki
-aşamalarda eklenecektir.
+bulunur. FastAPI backend'i, SQLite iş kayıtları ve SSE ilerleme akışı eklenmiştir;
+React arayüzü sonraki aşamada geliştirilecektir.
 
 ## Özellikler
 
@@ -28,7 +28,7 @@ Terminal CLI -> URL doğrulama -> yt-dlp -> FFmpeg -> yerel dosyalar
 
 Planlanan mimari, aynı Python indirme motorunu FastAPI üzerinden React
 arayüzüne bağlayacak. İndirme kuyruğu, SSE ilerleme aktarımı ve SQLite geçmişi
-henüz uygulanmadı.
+backend'de uygulanmıştır.
 
 ## Gereksinimler
 
@@ -92,19 +92,38 @@ gövdesiyle video veya playlist metadata'sını indirmeden inceler.
 çıktı dizinini ve `best/1080p/720p/480p/audio` preset'lerinden birini alır;
 işi SQLite'a kaydeder ve tek tüketicili yerel kuyruğa ekler. API ile çıktı
 yolu yalnızca proje içindeki `downloads/` klasörü altında seçilebilir.
-İlerleme ve iş geçmişini sorgulama endpoint'leri sonraki backend adımlarında
-eklenecektir.
+`GET /api/downloads` geçmişi, `GET /api/downloads/{job_id}` iş durumunu verir.
+`GET /api/downloads/{job_id}/events`, kalıcı iş ve video durumunu SSE üzerinden
+yaklaşık saniyede bir gönderir; iş sonlandığında akışı kapatır.
+
+`POST /api/downloads/{job_id}/cancel` bekleyen işi iptal eder veya çalışan işe
+iptal sinyali gönderir. Çalışan iş için `cancel_requested` yanıtı gelir;
+nihai durum GET/SSE üzerinden izlenir. İptal, indirme ilerlemesi ve işlem
+aşamaları arasında kontrol edilir; devam eden FFmpeg işlemi bitene kadar
+bekleyebilir. Tamamlanan dosyalar ve yarım kalan dosyalar korunur.
+`POST /api/downloads/{job_id}/retry`, yalnızca başarısız işlerin tamamlanmamış
+videoları için yeni bir iş oluşturur; önceki geçmiş kaydı değişmez.
 
 Veritabanı SQLite dosyası varsayılan olarak `data/app.db` konumunda tutulur.
 Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
 
 ## Geliştirme durumu
 
-1. Çekirdek terminal motoru: geliştirme aşamasında
-2. FastAPI, SQLite ve iş kuyruğu: planlandı
-3. React arayüzü ve SSE ilerlemesi: planlandı
+1. Çekirdek terminal motoru: uygulandı
+2. FastAPI, SQLite, iş kuyruğu, SSE, iptal ve yeniden deneme: uygulandı; sertleştirme sürüyor
+3. React arayüzü: planlandı
 4. Güvenlik sertleştirmesi ve otomatik testler: planlandı
 5. Masaüstü paketleme ve dağıtım: planlandı
+
+Backend testlerini `backend` klasöründe çalıştırın:
+
+```powershell
+..\.venv\Scripts\python.exe -m pytest -q
+```
+
+Bu testler geçici veritabanı ve taklit indirme adaptörü kullanır; gerçek
+YouTube indirmesi yapmaz. Gerçek indirme ve FFmpeg iptal davranışı için
+ayrıca isteğe bağlı entegrasyon doğrulaması gerekir.
 
 ## Lisans ve üçüncü taraf yazılımlar
 
