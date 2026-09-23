@@ -6,6 +6,7 @@ import asyncio
 import logging
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import update
 
 from app.database import SessionLocal
@@ -65,6 +66,12 @@ app = FastAPI(
 app.include_router(playlist_router)
 app.include_router(download_router)
 app.include_router(system_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/", tags=["system"])

@@ -3,7 +3,8 @@
 Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
 geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
 bulunur. FastAPI backend'i, SQLite iş kayıtları ve SSE ilerleme akışı eklenmiştir;
-React arayüzü sonraki aşamada geliştirilecektir.
+React arayüzünde bağlantı inceleme ve video seçimi hazırdır; indirme ayarları
+ve kuyruk ekranı sıradaki geliştirme adımıdır.
 
 ## Özellikler
 
@@ -117,7 +118,7 @@ Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
 
 1. Çekirdek terminal motoru: uygulandı
 2. FastAPI, SQLite, iş kuyruğu, SSE, iptal ve yeniden deneme: uygulandı; sertleştirme sürüyor
-3. React arayüzü: planlandı
+3. React arayüzü: bağlantı inceleme ve video seçimi uygulandı; kuyruk ekranı geliştirme sırasında
 4. Güvenlik sertleştirmesi ve otomatik testler: planlandı
 5. Masaüstü paketleme ve dağıtım: planlandı
 
@@ -130,6 +131,22 @@ Backend testlerini `backend` klasöründe çalıştırın:
 Bu testler geçici veritabanı ve taklit indirme adaptörü kullanır; gerçek
 YouTube indirmesi yapmaz. Gerçek indirme ve FFmpeg iptal davranışı için
 ayrıca isteğe bağlı entegrasyon doğrulaması gerekir.
+
+## React arayüzünü açma
+
+Backend açıkken ikinci bir terminalde proje kökünden:
+
+```powershell
+Set-Location frontend
+npm ci
+npm run dev
+```
+
+`http://localhost:5173` adresinde bağlantı inceleyebilir, video listesini
+görebilir ve seçim yapabilirsiniz. İndirme başlatma ve kuyruk ekranı henüz
+arayüze bağlanmadı; mevcut indirme akışı CLI veya API üzerinden kullanılabilir.
+Arayüz testleri için `npm test`, denetim için `npm run lint`, üretim derlemesi
+için `npm run build` çalıştırın.
 
 ## Lisans ve üçüncü taraf yazılımlar
 

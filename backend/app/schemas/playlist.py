@@ -12,11 +12,17 @@ class MediaEntry(BaseModel):
     title: str
     url: str | None = None
     duration: float | None = None
+    position: int
+    available: bool
+    thumbnail: str | None = None
 
 
 class InspectResponse(BaseModel):
+    id: str | None = None
     title: str | None = None
     channel: str | None = None
     webpage_url: str | None = None
     is_playlist: bool
+    thumbnail: str | None = None
+    item_count: int
     entries: list[MediaEntry]
