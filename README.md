@@ -1,0 +1,106 @@
+# YouTube Playlist Downloader
+
+Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
+geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
+bulunur; FastAPI backend'i, SQLite ile indirme geçmişi ve React arayüzü sonraki
+aşamalarda eklenecektir.
+
+## Özellikler
+
+- Tek video ve playlist bağlantılarını terminalden işleme
+- Desteklenen YouTube alan adları için HTTPS URL doğrulaması
+- 18 yaş kısıtlı içerikleri indirmeyi reddeden backend filtresi
+- yt-dlp ile video ve playlist indirme, indirme ilerlemesini gösterme
+- FFmpeg ile ayrı video ve ses akışlarını MP4 dosyasında birleştirme
+- Tamamlanan videoları indirme arşivine kaydetme ve tekrarları atlama
+- Bir playlist öğesi başarısız olduğunda diğer öğeleri işlemeye devam etme
+
+Uygulama giriş veya tarayıcı çerezi istemez; özel ya da giriş gerektiren
+içeriklere erişmeye çalışmaz. Yalnızca indirme hakkınız olan içerikleri kullanın
+ve platform koşullarına uyun. Teknik bir araç olması telif veya kullanım izni
+sağlamaz.
+
+## Teknoloji ve veri akışı
+
+```text
+Terminal CLI -> URL doğrulama -> yt-dlp -> FFmpeg -> yerel dosyalar
+```
+
+Planlanan mimari, aynı Python indirme motorunu FastAPI üzerinden React
+arayüzüne bağlayacak. İndirme kuyruğu, SSE ilerleme aktarımı ve SQLite geçmişi
+henüz uygulanmadı.
+
+## Gereksinimler
+
+- Windows 10/11
+- Python 3.12 (3.11 de desteklenmesi hedefleniyor)
+- Node.js 22 veya üzeri; yt-dlp YouTube JavaScript doğrulaması için kullanır
+- FFmpeg ve FFprobe; Windows PATH'inde bulunmalı
+- Git
+
+## Kurulum
+
+PowerShell'de depo kökünden çalıştırın:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```
+
+FFmpeg/FFprobe ve Node.js'i işletim sisteminize kurup yeni bir terminal açın.
+Sürümleri doğrulayın:
+
+```powershell
+python --version
+node --version
+ffmpeg -version
+ffprobe -version
+```
+
+## Çalıştırma
+
+Depo kökünden backend klasörüne geçin:
+
+```powershell
+Set-Location backend
+..\.venv\Scripts\python.exe -m app.cli "https://www.youtube.com/watch?v=VIDEO_ID" --output-dir ..\downloads
+```
+
+Playlist indirmek için `watch?v=...` yerine bir playlist URL'si verin:
+
+```powershell
+..\.venv\Scripts\python.exe -m app.cli "https://www.youtube.com/playlist?list=PLAYLIST_ID" --output-dir ..\downloads
+```
+
+İndirilen dosyalar seçilen klasöre, tekrar indirme arşivi ise aynı klasördeki
+`.downloaded.txt` dosyasına yazılır. İndirilen medya ve yerel veriler Git'e
+eklenmez.
+
+## Yerel API
+
+Backend'i `backend` klasöründen `..\.venv\Scripts\python.exe -m uvicorn
+app.main:app --reload --port 8000` komutuyla başlatın. API belgeleri
+`http://127.0.0.1:8000/docs` adresindedir. `POST /api/media/inspect`,
+`{"url":"https://www.youtube.com/watch?v=VIDEO_ID"}` gövdesiyle video veya
+playlist metadata'sını indirimsiz olarak inceler.
+
+Veritabanı SQLite dosyası varsayılan olarak `data/app.db` konumunda tutulur.
+Şema değişikliklerini uygulamak için `backend` klasöründe
+`..\.venv\Scripts\python.exe -m alembic upgrade head` komutunu çalıştırın.
+Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
+
+## Geliştirme durumu
+
+1. Çekirdek terminal motoru: geliştirme aşamasında
+2. FastAPI, SQLite ve iş kuyruğu: planlandı
+3. React arayüzü ve SSE ilerlemesi: planlandı
+4. Güvenlik sertleştirmesi ve otomatik testler: planlandı
+5. Masaüstü paketleme ve dağıtım: planlandı
+
+## Lisans ve üçüncü taraf yazılımlar
+
+Bu projenin özgün kaynak kodu MIT Lisansı ile sunulur. Python paketleri
+`backend/requirements.txt` içinde sabitlenmiştir. FFmpeg/FFprobe sistemde ayrı
+kurulur; yt-dlp ve diğer bağımlılıkların kendi lisansları geçerlidir. Uygulama
+paketlenip dağıtılmadan önce bağımlılık bildirimleri ve ilgili lisans koşulları
+ayrıca gözden geçirilmelidir.
