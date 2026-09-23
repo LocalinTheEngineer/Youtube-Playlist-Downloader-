@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
@@ -23,3 +23,12 @@ def _make_engine():
 
 engine = _make_engine()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+
+def get_session():
+    """Yield a request-scoped database session."""
+    session: Session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

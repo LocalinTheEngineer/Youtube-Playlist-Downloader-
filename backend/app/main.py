@@ -1,14 +1,60 @@
 """FastAPI application entry point."""
 
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
+from sqlalchemy import update
+
+from app.database import SessionLocal
+from app.models import DownloadItem, DownloadJob, JobStatus
+from app.workers.download_worker import download_queue
 from app.api.playlist_routes import router as playlist_router
+from app.api.download_routes import router as download_router
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Recover interrupted work, then run the single local queue worker."""
+    now = datetime.now(timezone.utc)
+    with SessionLocal.begin() as session:
+        session.execute(
+            update(DownloadJob)
+            .where(
+                DownloadJob.status.in_(
+                    [
+                        JobStatus.QUEUED.value,
+                        JobStatus.INSPECTING.value,
+                        JobStatus.DOWNLOADING.value,
+                        JobStatus.POSTPROCESSING.value,
+                    ]
+                )
+            )
+            .values(
+                status=JobStatus.INTERRUPTED.value,
+                finished_at=now,
+                error_message="Uygulama yeniden başlatıldığı için iş kesildi.",
+            )
+        )
+        session.execute(
+            update(DownloadItem)
+            .where(DownloadItem.status.in_(["queued", "downloading", "postprocessing"]))
+            .values(status=JobStatus.INTERRUPTED.value)
+        )
+    await download_queue.start()
+    try:
+        yield
+    finally:
+        await download_queue.stop()
 
 app = FastAPI(
     title="YouTube Playlist Downloader API",
     description="Yerel makinede çalışan indirme uygulamasının API'si.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 app.include_router(playlist_router)
+app.include_router(download_router)
 
 
 @app.get("/", tags=["system"])

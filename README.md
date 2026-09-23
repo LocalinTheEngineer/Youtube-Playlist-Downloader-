@@ -78,15 +78,24 @@ eklenmez.
 
 ## Yerel API
 
-Backend'i `backend` klasöründen `..\.venv\Scripts\python.exe -m uvicorn
-app.main:app --reload --port 8000` komutuyla başlatın. API belgeleri
-`http://127.0.0.1:8000/docs` adresindedir. `POST /api/media/inspect`,
-`{"url":"https://www.youtube.com/watch?v=VIDEO_ID"}` gövdesiyle video veya
-playlist metadata'sını indirimsiz olarak inceler.
+Önce `backend` klasöründe migration'ları uygulayın ve API'yi başlatın:
+
+```powershell
+..\.venv\Scripts\python.exe -m alembic upgrade head
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+```
+
+API belgeleri `http://127.0.0.1:8000/docs` adresindedir.
+`POST /api/media/inspect`, `{"url":"https://www.youtube.com/watch?v=VIDEO_ID"}`
+gövdesiyle video veya playlist metadata'sını indirmeden inceler.
+`POST /api/downloads` indirilecek bağlantıyı, isteğe bağlı video ID listesini,
+çıktı dizinini ve `best/1080p/720p/480p/audio` preset'lerinden birini alır;
+işi SQLite'a kaydeder ve tek tüketicili yerel kuyruğa ekler. API ile çıktı
+yolu yalnızca proje içindeki `downloads/` klasörü altında seçilebilir.
+İlerleme ve iş geçmişini sorgulama endpoint'leri sonraki backend adımlarında
+eklenecektir.
 
 Veritabanı SQLite dosyası varsayılan olarak `data/app.db` konumunda tutulur.
-Şema değişikliklerini uygulamak için `backend` klasöründe
-`..\.venv\Scripts\python.exe -m alembic upgrade head` komutunu çalıştırın.
 Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
 
 ## Geliştirme durumu
