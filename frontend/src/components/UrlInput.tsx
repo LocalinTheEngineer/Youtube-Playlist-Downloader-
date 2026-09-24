@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { ArrowRight, Link2, LoaderCircle } from 'lucide-react'
 
-interface Props { pending: boolean; onInspect: (url: string) => void }
+interface Props { pending: boolean; demo?: boolean; onInspect: (url: string) => void }
 
-export function UrlInput({ pending, onInspect }: Props) {
+export function UrlInput({ pending, demo = false, onInspect }: Props) {
   const [url, setUrl] = useState('')
   return <form onSubmit={(event) => { event.preventDefault(); onInspect(url.trim()) }}>
     <label htmlFor="media-url">YouTube bağlantısı</label>
@@ -15,6 +15,9 @@ export function UrlInput({ pending, onInspect }: Props) {
         {pending ? <><LoaderCircle size={17} className="spin" aria-hidden="true" /> İnceleniyor</> : <>İncele <ArrowRight size={17} aria-hidden="true" /></>}
       </button>
     </div>
-    <p className="hint">Tek bir video ya da bir playlist. Önce içeriği gör, sonra seçimini yap.</p>
+    <div className="input-help"><p className="hint">Tek bir video ya da bir playlist. Önce içeriği gör, sonra seçimini yap.</p>
+      {demo && <button className="text-button demo-example" type="button" disabled={pending}
+        onClick={() => onInspect('https://www.youtube.com/playlist?list=PLAYLIST_STUDIO_DEMO')}>Örnek playlisti aç</button>}
+    </div>
   </form>
 }

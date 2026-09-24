@@ -163,6 +163,15 @@ işlerin kalan videoları yeni bir işte yeniden denenebilir.
 Arayüz testleri için `npm test`, denetim için `npm run lint`, üretim derlemesi
 için `npm run build` çalıştırın.
 
+## Ücretsiz web demosu
+
+`frontend` klasörü Vercel üzerinde ücretsiz, hesapsız ziyaret edilebilen statik
+bir ürün demosu olarak yayımlanabilir. Üretim derlemesi canlı API adresi
+bulamazsa otomatik olarak demo moduna geçer. Örnek playlist üzerinde seçim,
+kalite ayarı, kuyruk, canlı ilerleme ve iptal denenebilir; gerçek YouTube
+verisi alınmaz ve medya indirilmez. Vercel ayarları için `frontend/README.md`
+dosyasındaki adımları izleyin.
+
 ## Lisans ve üçüncü taraf yazılımlar
 
 Bu projenin özgün kaynak kodu MIT Lisansı ile sunulur. Python paketleri

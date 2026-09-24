@@ -5,7 +5,7 @@ import { createDownload, errorMessage } from '../services/api'
 import { useDownloadStore } from '../stores/downloadStore'
 import type { DownloadJob, FormatPreset } from '../types/download'
 
-export function DownloadSettings({ ready }: { ready: boolean }) {
+export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo?: boolean }) {
   const store = useDownloadStore()
   const client = useQueryClient()
   const submitting = useRef(false)
@@ -49,12 +49,12 @@ export function DownloadSettings({ ready }: { ready: boolean }) {
         <div className="folder-field"><Folder size={17} aria-hidden="true" /><span>downloads /</span><input id="output-directory" value={store.outputDirectory} maxLength={2048} placeholder="Örn. Müzik/Favoriler" onChange={(event) => { store.setOutputDirectory(event.target.value); setPathError('') }} aria-invalid={!!pathError} aria-describedby="folder-hint" /></div>
         <p className="hint" id="folder-hint">Boş bırakırsan dosyalar downloads klasörüne kaydedilir.</p>
         <div className="download-action"><span>Seçilen: {store.selectedIds.length} video</span><button className="primary" disabled={!ready || !store.selectedIds.length || mutation.isPending} type="submit">
-          {mutation.isPending ? <LoaderCircle className="spin" size={17} /> : <ArrowDownToLine size={17} />} {mutation.isPending ? 'Kuyruğa ekleniyor' : 'İndirmeyi başlat'}
+          {mutation.isPending ? <LoaderCircle className="spin" size={17} /> : <ArrowDownToLine size={17} />} {mutation.isPending ? 'Kuyruğa ekleniyor' : demo ? 'Demo akışını başlat' : 'İndirmeyi başlat'}
         </button></div>
       </fieldset>
       {!ready && <p className="hint">İndirmeden önce sistem kontrolündeki eksikleri giderin.</p>}
       {(pathError || mutation.isError) && <div className="error" role="alert"><CircleAlert size={18} /><span>{pathError || errorMessage(mutation.error, 'İndirme başlatılamadı. Yeniden denemeden önce kuyruğu kontrol edin.')}</span></div>}
-      {mutation.isSuccess && <p className="success-message" role="status">İş kuyruğa eklendi. İlerlemeyi aşağıdan takip edebilirsin.</p>}
+      {mutation.isSuccess && <p className="success-message" role="status">{demo ? 'Demo başladı. Simüle edilen ilerlemeyi aşağıdan izleyebilirsin.' : 'İş kuyruğa eklendi. İlerlemeyi aşağıdan takip edebilirsin.'}</p>}
     </form>
   </section>
 }
