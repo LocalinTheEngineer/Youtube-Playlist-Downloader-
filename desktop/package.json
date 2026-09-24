@@ -1,0 +1,16 @@
+{
+  "name": "playlist-studio-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "build:frontend": "npm --prefix ../frontend run build:desktop",
+    "dev": "npm run build:frontend && electron .",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}

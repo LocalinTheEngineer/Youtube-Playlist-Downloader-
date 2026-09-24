@@ -6,6 +6,7 @@ from typing import Any
 
 from yt_dlp import YoutubeDL
 
+from app.config import settings
 
 UNAVAILABLE_STATES = frozenset(
     {"private", "premium_only", "subscriber_only", "needs_auth"}
@@ -15,13 +16,14 @@ UNAVAILABLE_TITLES = frozenset({"[Deleted video]", "[Private video]"})
 
 def inspect_media(url: str) -> dict[str, Any]:
     """Extract flat metadata without downloading media."""
+    node_runtime = {"path": str(settings.node_path)} if settings.node_path else {}
     options = {
         "extract_flat": "in_playlist",
         "skip_download": True,
         "quiet": True,
         "no_warnings": True,
         "noplaylist": False,
-        "js_runtimes": {"node": {}},
+        "js_runtimes": {"node": node_runtime},
     }
     with YoutubeDL(options) as downloader:
         result = downloader.extract_info(url, download=False)

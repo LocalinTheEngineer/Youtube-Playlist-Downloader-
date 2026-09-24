@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
 from app.api.playlist_routes import inspect_media
-from app.config import PROJECT_ROOT
+from app.config import settings
 from app.database import SessionLocal, get_session
 from app.models import DownloadItem, DownloadJob, JobStatus
 from app.schemas.download import (
@@ -24,7 +24,7 @@ from app.services.url_validator import validate_youtube_url
 from app.workers.download_worker import download_queue
 
 router = APIRouter(prefix="/api/downloads", tags=["downloads"])
-DOWNLOAD_ROOT = (PROJECT_ROOT / "downloads").resolve()
+DOWNLOAD_ROOT = settings.download_root.expanduser().resolve()
 
 
 def _output_path(value: str) -> Path:

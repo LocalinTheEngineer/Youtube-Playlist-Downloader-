@@ -9,6 +9,7 @@ from typing import Any, Callable
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadCancelled
 
+from app.config import settings
 from app.services.format_service import AUDIO_QUALITY, FORMAT_PRESETS
 from app.services.url_validator import validate_youtube_url
 
@@ -39,10 +40,11 @@ def download_playlist(
     output_dir = Path(output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    node_runtime = {"path": str(settings.node_path)} if settings.node_path else {}
     options: dict[str, Any] = {
         "format": FORMAT_PRESETS[format_preset],
         "age_limit": 17,
-        "js_runtimes": {"node": {}},
+        "js_runtimes": {"node": node_runtime},
         "outtmpl": str(
             output_dir
             / "%(playlist_title|)s"

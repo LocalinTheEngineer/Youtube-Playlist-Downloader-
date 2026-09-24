@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Download } from 'lucide-react'
 import { cancelDownload, errorMessage, listDownloads, retryDownload } from '../services/api'
 import { isTerminal } from '../types/download'
 import type { DownloadJob } from '../types/download'
@@ -38,7 +39,7 @@ function JobCard({ job, streaming }: { job: DownloadJob; streaming: boolean }) {
   </article>
 }
 
-export function DownloadQueue() {
+export function DownloadQueue({ showEmpty = false }: { showEmpty?: boolean }) {
   const client = useQueryClient()
   const query = useQuery({ queryKey: ['downloads'], queryFn: async () => {
     const snapshot = await listDownloads()
@@ -53,7 +54,7 @@ export function DownloadQueue() {
   const streamingIds = new Set(query.data?.filter((job) => !isTerminal(job.status))
     .sort((a, b) => Number(a.status === 'queued') - Number(b.status === 'queued'))
     .slice(0, 2).map((job) => job.id))
-  if (!query.data?.length && !query.isError) return null
+  if (!query.data?.length && !query.isError) return showEmpty ? <section className="queue-empty"><span><Download size={22} /></span><h2>Henüz indirme yok</h2><p>Başlattığın indirmeler ve ilerleme bilgileri burada görünecek.</p></section> : null
   return <section className="download-queue" aria-labelledby="queue-title"><div className="section-title"><span className="step-number">03</span><h2 id="queue-title">İndirmeler</h2></div>
     {query.isError && <div className="error" role="alert">{errorMessage(query.error, 'Kuyruk bilgisi alınamadı.')} <button className="text-button" onClick={() => void query.refetch()}>Yenile</button></div>}
     {query.data?.map((job) => <JobCard key={job.id} job={job} streaming={streamingIds.has(job.id)} />)}

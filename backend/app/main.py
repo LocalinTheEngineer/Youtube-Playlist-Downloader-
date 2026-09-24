@@ -6,10 +6,14 @@ import asyncio
 import logging
 
 from fastapi import FastAPI
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import update
 
-from app.database import SessionLocal
+from app.config import settings
+from app.database import Base, SessionLocal, engine
 from app.models import DownloadItem, DownloadJob, JobStatus
 from app.workers.download_worker import download_queue
 from app.api.playlist_routes import router as playlist_router
@@ -21,6 +25,7 @@ from app.services.system_service import check_system
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Recover interrupted work, then run the single local queue worker."""
+    Base.metadata.create_all(bind=engine)
     _app.state.system_check = await asyncio.to_thread(check_system)
     if not _app.state.system_check.ready:
         logging.getLogger(__name__).warning(
@@ -74,8 +79,32 @@ app.add_middleware(
 )
 
 
-@app.get("/", tags=["system"])
-async def root() -> dict[str, str]:
-    """Expose a small health response for local startup checks."""
+@app.get("/health", tags=["system"])
+async def health() -> dict[str, str]:
+    """Expose a small health response for desktop startup checks."""
     return {"status": "ok", "service": "youtube-playlist-downloader"}
+
+
+frontend_dist = settings.frontend_dist.expanduser().resolve() if settings.frontend_dist else None
+if frontend_dist and (frontend_dist / "index.html").is_file():
+    assets = frontend_dist / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="frontend-assets")
+
+    @app.get("/", include_in_schema=False)
+    async def desktop_index() -> FileResponse:
+        return FileResponse(frontend_dist / "index.html")
+
+    @app.get("/{requested_path:path}", include_in_schema=False)
+    async def desktop_spa(requested_path: str) -> FileResponse:
+        if requested_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Endpoint bulunamadı.")
+        candidate = (frontend_dist / requested_path).resolve()
+        if candidate.is_relative_to(frontend_dist) and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(frontend_dist / "index.html")
+else:
+    @app.get("/", tags=["system"])
+    async def root() -> dict[str, str]:
+        return {"status": "ok", "service": "youtube-playlist-downloader"}
 

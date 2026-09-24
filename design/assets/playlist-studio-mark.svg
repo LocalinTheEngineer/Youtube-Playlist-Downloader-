@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Playlist Studio</title>
+  <desc id="desc">Oynatma ve indirme işaretini birleştiren yeşil uygulama simgesi.</desc>
+  <rect width="512" height="512" rx="120" fill="#12251d"/>
+  <path d="M139 126c0-25 28-40 49-26l180 116c20 13 20 43 0 56L188 388c-21 14-49-1-49-26V126Z" fill="#8ee66b"/>
+  <path d="M256 154v142" stroke="#12251d" stroke-width="38" stroke-linecap="round"/>
+  <path d="m207 257 49 49 49-49" fill="none" stroke="#12251d" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M199 350h114" stroke="#12251d" stroke-width="38" stroke-linecap="round"/>
+</svg>

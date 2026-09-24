@@ -13,4 +13,8 @@ dist/
 *.part
 *.log
 *.egg-info/
+desktop/runtime/
+desktop/release/
+backend/build/
+backend/dist/
 

@@ -7,6 +7,7 @@ import subprocess
 from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version
 
+from app.config import settings
 from app.schemas.system import DependencyCheck, SystemCheck
 
 
@@ -22,7 +23,8 @@ def _package(name: str) -> DependencyCheck:
 
 
 def _executable(name: str) -> DependencyCheck:
-    executable = shutil.which(name)
+    configured = settings.node_path if name == "node" else None
+    executable = str(configured) if configured else shutil.which(name)
     if executable is None:
         return DependencyCheck(
             name=name, ready=False,

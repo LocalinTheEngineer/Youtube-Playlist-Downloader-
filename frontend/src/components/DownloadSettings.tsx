@@ -54,7 +54,7 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
       </fieldset>
       {!ready && <p className="hint">İndirmeden önce sistem kontrolündeki eksikleri giderin.</p>}
       {(pathError || mutation.isError) && <div className="error" role="alert"><CircleAlert size={18} /><span>{pathError || errorMessage(mutation.error, 'İndirme başlatılamadı. Yeniden denemeden önce kuyruğu kontrol edin.')}</span></div>}
-      {mutation.isSuccess && <p className="success-message" role="status">{demo ? 'Demo başladı. Simüle edilen ilerlemeyi aşağıdan izleyebilirsin.' : 'İş kuyruğa eklendi. İlerlemeyi aşağıdan takip edebilirsin.'}</p>}
+      {mutation.isSuccess && <p className="success-message" role="status">{demo ? 'Demo başladı. Simüle edilen ilerlemeyi İndirmeler ekranından izleyebilirsin.' : 'İş kuyruğa eklendi. İlerlemeyi İndirmeler ekranından takip edebilirsin.'}</p>}
     </form>
   </section>
 }
