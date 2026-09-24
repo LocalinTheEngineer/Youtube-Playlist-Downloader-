@@ -1,5 +1,7 @@
 # Playlist Studio arayüzü
 
+**Canlı demo:** [youtube-playlist-downloader-coral.vercel.app](https://youtube-playlist-downloader-coral.vercel.app/)
+
 React, TypeScript ve Vite ile yerel indirme uygulamasının arayüzü.
 Bağlantı inceleme, video seçimi, bağımlılık durumu, kalite/format ve hedef
 alt klasör ayarları uygulanmıştır. Seçilen videolar API üzerinden kuyruğa

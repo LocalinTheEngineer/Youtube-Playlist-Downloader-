@@ -1,5 +1,10 @@
 # YouTube Playlist Downloader
 
+**Canlı ve hesapsız demo:** [youtube-playlist-downloader-coral.vercel.app](https://youtube-playlist-downloader-coral.vercel.app/)
+
+Web demosu örnek verilerle çalışır ve gerçek medya indirmez. Gerçek indirme
+motoru yerel kurulumda kullanılabilir.
+
 Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
 geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
 bulunur. FastAPI backend'i, SQLite iş kayıtları ve SSE ilerleme akışı eklenmiştir;
