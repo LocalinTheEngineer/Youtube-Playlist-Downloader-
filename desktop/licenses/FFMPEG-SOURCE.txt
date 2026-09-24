@@ -1,4 +1,4 @@
-Playlist Studio 0.1.0 includes FFmpeg/ffprobe 8.0.1 Windows executables.
+Playlist Studio includes FFmpeg/ffprobe 8.0.1 Windows executables.
 
 Upstream source for the corresponding release:
 https://github.com/FFmpeg/FFmpeg/tree/n8.0.1

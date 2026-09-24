@@ -122,6 +122,18 @@ test('audio mode uses the audio preset and fixes its bitrate', async () => {
   expect(useDownloadStore.getState().formatPreset).toBe('audio')
 })
 
+test('updates the estimated MB or GB range when selection and quality change', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  const user = renderApp()
+  expect(screen.getByText('Tahmini indirme boyutu')).toBeVisible()
+  const initial = screen.getByText(/Yaklaşık .*–/).textContent
+  await user.selectOptions(screen.getByLabelText('Kalite'), '480p')
+  const lowerQuality = screen.getByText(/Yaklaşık .*–/).textContent
+  expect(lowerQuality).not.toBe(initial)
+  await user.click(screen.getByRole('checkbox', { name: 'İkinci video' }))
+  expect(screen.getByText(/Yaklaşık .*–/).textContent).not.toBe(lowerQuality)
+})
+
 test('requests cancellation and keeps pending cancellation distinct from completion', async () => {
   vi.mocked(listDownloads).mockResolvedValue([{ ...job, status: 'downloading' }])
   vi.mocked(cancelDownload).mockResolvedValue({ id: job.id, status: 'cancel_requested' })

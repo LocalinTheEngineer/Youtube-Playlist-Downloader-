@@ -19,6 +19,9 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 - Windows'a kurulabilen, web tarayıcısı gerektirmeyen masaüstü arayüzü
 - Playlist içinden tümünü veya yalnız seçilen videoları indirme
 - MP4 için en yüksek, 1080p, 720p ve 480p; MP3 için kalite seçenekleri
+- Seçili videoların süresi ve kalite ayarına göre anlık MB/GB boyut tahmini
+- Türkçeye ek olarak İngilizce, Çince, Hintçe, İspanyolca, Arapça, Fransızca,
+  Bengalce, Portekizce, Rusça ve Endonezce arayüz seçenekleri
 - İndirme kuyruğu, öğe bazında ilerleme, iptal ve yeniden deneme
 - Tek video ve playlist bağlantılarını terminalden işleme
 - Desteklenen YouTube alan adları için HTTPS URL doğrulaması
@@ -45,7 +48,7 @@ backend'de uygulanmıştır.
 
 ## Windows uygulamasını kurma
 
-`desktop/release/Playlist-Studio-Setup-0.1.0.exe` dosyasını çalıştırın. Kurucu
+`desktop/release/Playlist-Studio-Setup-0.2.0.exe` dosyasını çalıştırın. Kurucu
 masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
 ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
 kurmaz. İndirilen dosyalar varsayılan olarak Windows
