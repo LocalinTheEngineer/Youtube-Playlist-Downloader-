@@ -17,5 +17,14 @@ arayüzü gösterir. Veritabanı kullanıcı uygulama verisi klasöründe, indir
 ise Windows `Downloads/Playlist Studio` klasöründe tutulur. Pencere kapandığında
 uygulamanın başlattığı backend süreç ağacı da kapatılır.
 
-Bu ilk masaüstü aşaması geliştirme ortamında çalışır. Dağıtılabilir Windows
-kurulumu için Python backend ve FFmpeg/FFprobe ayrıca paketlenecektir.
+## Windows kurucusu
+
+```powershell
+Set-Location desktop
+npm run dist
+```
+
+Bu komut React arayüzünü derler, Python servisini tek bir Windows yürütülebilir
+dosyasına dönüştürür, FFmpeg/ffprobe çalışma dosyalarını ekler ve NSIS kurucusunu
+`desktop/release` klasörüne yazar. FFmpeg farklı bir klasördeyse önce
+`YTDL_FFMPEG_BIN` ortam değişkenini o klasöre ayarlayın.

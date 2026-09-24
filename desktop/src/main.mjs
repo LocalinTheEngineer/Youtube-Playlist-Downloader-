@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,12 +89,17 @@ async function waitForBackend(url) {
 function stopBackend() {
   if (!backendProcess?.pid) return
   const pid = backendProcess.pid
-  backendProcess = null
   if (process.platform === 'win32') {
-    execFile('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true }, () => {})
+    try {
+      execFileSync('taskkill', ['/pid', String(pid), '/T', '/F'], {
+        windowsHide: true,
+        stdio: 'ignore',
+      })
+    } catch { /* Process tree already exited. */ }
   } else {
     try { process.kill(pid, 'SIGTERM') } catch { /* Process already exited. */ }
   }
+  backendProcess = null
 }
 
 async function createWindow() {
@@ -142,9 +147,13 @@ else {
       app.quit()
     }
   })
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0 && backendUrl) void createWindow()
+  if (process.platform === 'darwin') {
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0 && backendUrl) void createWindow()
+    })
+  }
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit()
   })
-  app.on('window-all-closed', () => app.quit())
   app.on('before-quit', () => { quitting = true; stopBackend() })
 }

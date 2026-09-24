@@ -1,16 +1,73 @@
 {
   "name": "playlist-studio-desktop",
   "version": "0.1.0",
+  "description": "Yerel çalışan YouTube oynatma listesi indirme uygulaması",
+  "author": "LocalinTheEngineer",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
     "build:frontend": "npm --prefix ../frontend run build:desktop",
+    "build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-backend.ps1",
+    "stage:runtime": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stage-runtime.ps1",
+    "prepare:dist": "npm run build:frontend && npm run build:backend && npm run stage:runtime",
+    "pack": "npm run prepare:dist && electron-builder --win --dir",
+    "dist": "npm run prepare:dist && electron-builder --win nsis",
     "dev": "npm run build:frontend && electron .",
     "start": "electron ."
   },
   "devDependencies": {
     "electron": "44.4.5",
     "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.localintheengineer.playliststudio",
+    "productName": "Playlist Studio",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../frontend/dist",
+        "to": "frontend"
+      },
+      {
+        "from": "runtime/backend",
+        "to": "backend"
+      },
+      {
+        "from": "runtime/bin",
+        "to": "runtime"
+      },
+      {
+        "from": "../THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      },
+      {
+        "from": "licenses",
+        "to": "licenses"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png",
+      "artifactName": "Playlist-Studio-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Playlist Studio",
+      "license": "../LICENSE"
+    }
   }
 }

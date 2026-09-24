@@ -1,9 +1,11 @@
 # YouTube Playlist Downloader
 
-**Canlı ve hesapsız demo:** [youtube-playlist-downloader-coral.vercel.app](https://youtube-playlist-downloader-coral.vercel.app/)
+**Playlist Studio**, web sitesinden bağımsız çalışan Windows masaüstü
+uygulamasıdır. Bağlantıyı yapıştırır, listedeki videoları seçer, MP4/MP3 ve
+kalite ayarını belirler, indirme ilerlemesini uygulamanın içinde izlersiniz.
 
-Web demosu örnek verilerle çalışır ve gerçek medya indirmez. Gerçek indirme
-motoru yerel kurulumda kullanılabilir.
+Eski [web demosu](https://youtube-playlist-downloader-coral.vercel.app/) yalnız
+örnek veri gösterir ve gerçek medya indirmez; gerçek ürün masaüstü sürümüdür.
 
 Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
 geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
@@ -14,6 +16,10 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 
 ## Özellikler
 
+- Windows'a kurulabilen, web tarayıcısı gerektirmeyen masaüstü arayüzü
+- Playlist içinden tümünü veya yalnız seçilen videoları indirme
+- MP4 için en yüksek, 1080p, 720p ve 480p; MP3 için kalite seçenekleri
+- İndirme kuyruğu, öğe bazında ilerleme, iptal ve yeniden deneme
 - Tek video ve playlist bağlantılarını terminalden işleme
 - Desteklenen YouTube alan adları için HTTPS URL doğrulaması
 - 18 yaş kısıtlı içerikleri indirmeyi reddeden backend filtresi
@@ -37,7 +43,15 @@ Mimari, aynı Python indirme motorunu FastAPI üzerinden React
 arayüzüne bağlar. İndirme kuyruğu, SSE ilerleme aktarımı ve SQLite geçmişi
 backend'de uygulanmıştır.
 
-## Gereksinimler
+## Windows uygulamasını kurma
+
+`desktop/release/Playlist-Studio-Setup-0.1.0.exe` dosyasını çalıştırın. Kurucu
+masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
+ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
+kurmaz. İndirilen dosyalar varsayılan olarak Windows
+`Downloads/Playlist Studio` klasörüne yazılır.
+
+## Geliştirme gereksinimleri
 
 - Windows 10/11
 - Python 3.12 (3.11 de desteklenmesi hedefleniyor)
@@ -137,7 +151,7 @@ Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
 2. FastAPI, SQLite, iş kuyruğu, SSE, iptal ve yeniden deneme: uygulandı; sertleştirme sürüyor
 3. React arayüzü: inceleme, seçim, kalite/alt klasör ayarları, indirme, kuyruk, iptal, yeniden deneme ve SSE uygulandı
 4. Güvenlik sertleştirmesi ve otomatik testler: planlandı
-5. Masaüstü paketleme ve dağıtım: planlandı
+5. Electron masaüstü paketi ve NSIS Windows kurucusu: uygulandı
 
 Backend testlerini `backend` klasöründe çalıştırın:
 
@@ -180,7 +194,7 @@ dosyasındaki adımları izleyin.
 ## Lisans ve üçüncü taraf yazılımlar
 
 Bu projenin özgün kaynak kodu MIT Lisansı ile sunulur. Python paketleri
-`backend/requirements.txt` içinde sabitlenmiştir. FFmpeg/FFprobe sistemde ayrı
-kurulur; yt-dlp ve diğer bağımlılıkların kendi lisansları geçerlidir. Uygulama
-paketlenip dağıtılmadan önce bağımlılık bildirimleri ve ilgili lisans koşulları
-ayrıca gözden geçirilmelidir.
+`backend/requirements.txt` içinde sabitlenmiştir. Windows paketindeki ayrı
+FFmpeg/FFprobe yürütülebilirleri GPLv3 koşullarına tabidir. Kaynak ve lisans
+bağlantıları `THIRD_PARTY_NOTICES.md` ile kurulum paketinin `licenses`
+klasöründe bulunur; diğer bağımlılıkların kendi lisansları geçerlidir.
