@@ -4,10 +4,12 @@ import { cancelDownload, errorMessage, listDownloads, retryDownload } from '../s
 import { isTerminal } from '../types/download'
 import type { DownloadJob } from '../types/download'
 import { useDownloadStore } from '../stores/downloadStore'
+import { useDownloadEvents } from '../hooks/useDownloadEvents'
 
 const labels: Record<string, string> = { queued: 'Sırada', inspecting: 'İnceleniyor', downloading: 'İndiriliyor', postprocessing: 'İşleniyor', completed: 'Tamamlandı', failed: 'Başarısız', cancelled: 'İptal edildi', interrupted: 'Kesintiye uğradı', skipped: 'Atlandı' }
 
-function JobCard({ job }: { job: DownloadJob }) {
+function JobCard({ job, streaming }: { job: DownloadJob; streaming: boolean }) {
+  const connection = useDownloadEvents(job.id, streaming)
   const client = useQueryClient()
   const { activeJobId, setActiveJob } = useDownloadStore()
   const [cancelRequested, setCancelRequested] = useState(false)
@@ -23,6 +25,7 @@ function JobCard({ job }: { job: DownloadJob }) {
     <div className="job-heading"><h3>{job.playlist_title || 'İndirme işi'}</h3><span className={`job-status ${job.status}`}>{cancelRequested && !terminal ? 'İptal bekleniyor' : labels[job.status]}</span></div>
     <progress value={progress} max={100} aria-label="Genel ilerleme" />
     <div className="job-meta"><span>{job.completed_items} / {job.total_items} tamamlandı{job.failed_items > 0 && ` · ${job.failed_items} başarısız`}</span><span>{Math.round(progress)}%</span></div>
+    {streaming && connection === 'reconnecting' && <p className="hint" role="status">Canlı bağlantı yeniden kuruluyor. Durum düzenli olarak kontrol ediliyor.</p>}
     <details><summary>Video ayrıntıları</summary><ul className="queue-items">{job.items.map((item) => <li key={item.id}>
       <div><strong>{item.title}</strong><span>{labels[item.status]}</span></div><progress max={100} value={Math.max(0, Math.min(100, item.progress))} aria-label={`${item.title} ilerleme`} />
       {!terminal && item.status === 'downloading' && <small>{item.speed != null ? `${(item.speed / 1_000_000).toFixed(1)} MB/sn` : 'Hız hesaplanıyor'} · {item.eta != null ? `${Math.ceil(item.eta)} sn kaldı` : 'Süre hesaplanıyor'}</small>}
@@ -36,10 +39,23 @@ function JobCard({ job }: { job: DownloadJob }) {
 }
 
 export function DownloadQueue() {
-  const query = useQuery({ queryKey: ['downloads'], queryFn: listDownloads, retry: false, refetchInterval: 2000 })
+  const client = useQueryClient()
+  const query = useQuery({ queryKey: ['downloads'], queryFn: async () => {
+    const snapshot = await listDownloads()
+    const current = new Map(client.getQueryData<DownloadJob[]>(['downloads'])?.map((job) => [job.id, job]))
+    // A slow HTTP snapshot must not undo a terminal event already received over SSE.
+    return snapshot.map((job) => {
+      const cached = current.get(job.id)
+      return cached && isTerminal(cached.status) && !isTerminal(job.status) ? cached : job
+    })
+  }, retry: false, refetchInterval: 15_000 })
+  // Keep connections below browser HTTP/1 limits; queued work is discovered by the snapshot query.
+  const streamingIds = new Set(query.data?.filter((job) => !isTerminal(job.status))
+    .sort((a, b) => Number(a.status === 'queued') - Number(b.status === 'queued'))
+    .slice(0, 2).map((job) => job.id))
   if (!query.data?.length && !query.isError) return null
   return <section className="download-queue" aria-labelledby="queue-title"><div className="section-title"><span className="step-number">03</span><h2 id="queue-title">İndirmeler</h2></div>
     {query.isError && <div className="error" role="alert">{errorMessage(query.error, 'Kuyruk bilgisi alınamadı.')} <button className="text-button" onClick={() => void query.refetch()}>Yenile</button></div>}
-    {query.data?.map((job) => <JobCard key={job.id} job={job} />)}
+    {query.data?.map((job) => <JobCard key={job.id} job={job} streaming={streamingIds.has(job.id)} />)}
   </section>
 }

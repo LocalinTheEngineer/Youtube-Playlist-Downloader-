@@ -4,8 +4,8 @@ Yerel bilgisayarda çalışan bir YouTube video ve playlist indiricisi. Bu depo
 geliştirme aşamasındadır: ilk aşamada terminalden çalışan Python indirme motoru
 bulunur. FastAPI backend'i, SQLite iş kayıtları ve SSE ilerleme akışı eklenmiştir;
 React arayüzünde bağlantı inceleme, video seçimi, indirme ayarları ve kuyruk
-ekranı hazırdır. Kuyruk şu anda iki saniyelik sorgularla yenilenir; SSE
-istemcisi sonraki adımda bağlanacaktır.
+ekranı hazırdır. Canlı ilerleme SSE üzerinden gelir; yeni işleri keşfetmek
+ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanılır.
 
 ## Özellikler
 
@@ -119,7 +119,7 @@ Bağlantı adresi `YTDL_DATABASE_URL` ortam değişkeniyle değiştirilebilir.
 
 1. Çekirdek terminal motoru: uygulandı
 2. FastAPI, SQLite, iş kuyruğu, SSE, iptal ve yeniden deneme: uygulandı; sertleştirme sürüyor
-3. React arayüzü: inceleme, seçim, kalite/alt klasör ayarları, indirme, kuyruk, iptal ve yeniden deneme uygulandı; SSE bağlantısı sırada
+3. React arayüzü: inceleme, seçim, kalite/alt klasör ayarları, indirme, kuyruk, iptal, yeniden deneme ve SSE uygulandı
 4. Güvenlik sertleştirmesi ve otomatik testler: planlandı
 5. Masaüstü paketleme ve dağıtım: planlandı
 

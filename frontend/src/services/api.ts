@@ -20,6 +20,10 @@ export async function listDownloads(): Promise<DownloadJob[]> {
   return (await api.get<DownloadJob[]>('/downloads', { timeout: 15_000 })).data
 }
 
+export function openDownloadEvents(id: string): EventSource {
+  return new EventSource(`${api.defaults.baseURL}/downloads/${encodeURIComponent(id)}/events`)
+}
+
 export async function cancelDownload(id: string): Promise<{ id: string; status: string }> {
   return (await api.post(`/downloads/${encodeURIComponent(id)}/cancel`)).data
 }

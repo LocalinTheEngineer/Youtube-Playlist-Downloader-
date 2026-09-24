@@ -3,8 +3,11 @@
 React, TypeScript ve Vite ile yerel indirme uygulamasının arayüzü.
 Bağlantı inceleme, video seçimi, bağımlılık durumu, kalite/format ve hedef
 alt klasör ayarları uygulanmıştır. Seçilen videolar API üzerinden kuyruğa
-eklenir. Kuyruk iki saniyede bir yenilenir; iptal ve başarısız videoları
-yeniden deneme desteklenir. SSE istemcisi sonraki aşamadadır.
+eklenir. İlerleme SSE üzerinden gelir; iptal ve başarısız videoları yeniden
+deneme desteklenir. En fazla iki aktif işe SSE bağlantısı açılır; diğer işler
+ve bağlantı kesintileri için 15 saniyelik yedek sorgu kullanılır. Tarayıcının
+EventSource yeniden bağlanma mekanizması korunur; iş bittiğinde veya bileşen
+kaldırıldığında bağlantı kapatılır. Hatalı olay verisi durumu değiştirmez.
 
 Node.js 22.12+ veya 24 kullanın. Backend'i proje kökündeki README'ye göre
 `127.0.0.1:8000` üzerinde başlatın. Bu klasörde:
