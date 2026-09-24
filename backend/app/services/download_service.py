@@ -9,7 +9,7 @@ from typing import Any, Callable
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadCancelled
 
-from app.services.format_service import FORMAT_PRESETS
+from app.services.format_service import AUDIO_QUALITY, FORMAT_PRESETS
 from app.services.url_validator import validate_youtube_url
 
 ProgressHook = Callable[[dict[str, Any]], None]
@@ -21,6 +21,7 @@ def download_playlist(
     progress_hook: ProgressHook,
     format_preset: str = "best",
     cancel_event: Event | None = None,
+    playlist_items: list[int] | None = None,
 ) -> int:
     """Download a video or playlist, continuing when an individual item fails."""
     def check_cancelled(_data=None) -> None:
@@ -58,12 +59,17 @@ def download_playlist(
         "retries": 3,
         "download_archive": str(output_dir / ".downloaded.txt"),
     }
-    if format_preset == "audio":
+    if playlist_items is not None:
+        if not playlist_items or any(position < 1 for position in playlist_items):
+            raise ValueError("Playlist seçimleri pozitif sıra numaraları olmalıdır.")
+        options["playlist_items"] = ",".join(str(position) for position in playlist_items)
+
+    if format_preset in AUDIO_QUALITY:
         options["postprocessors"] = [
             {
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
-                "preferredquality": "192",
+                "preferredquality": AUDIO_QUALITY[format_preset],
             }
         ]
     else:

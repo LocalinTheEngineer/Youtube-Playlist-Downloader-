@@ -6,4 +6,14 @@ FORMAT_PRESETS = {
     "720p": "bv*[height<=720]+ba/b[height<=720]",
     "480p": "bv*[height<=480]+ba/b[height<=480]",
     "audio": "ba/b",
+    "audio128": "ba/b",
+    "audio192": "ba/b",
+    "audio320": "ba/b",
+}
+
+AUDIO_QUALITY = {
+    "audio": "192",
+    "audio128": "128",
+    "audio192": "192",
+    "audio320": "320",
 }

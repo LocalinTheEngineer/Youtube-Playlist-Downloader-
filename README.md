@@ -74,6 +74,17 @@ Playlist indirmek için `watch?v=...` yerine bir playlist URL'si verin:
 ..\.venv\Scripts\python.exe -m app.cli "https://www.youtube.com/playlist?list=PLAYLIST_ID" --output-dir ..\downloads
 ```
 
+Terminal önce video veya playlist içeriğini listeler. Playlist için `tümü` ya da
+`1,3-5` biçiminde sıra numaraları girerek yalnızca istediğiniz videoları
+seçebilirsiniz; seçilen video sayısı indirme başlamadan gösterilir. Sonraki
+menülerde MP4 veya MP3 seçilir. MP4 için en yüksek uygun kalite, 1080p, 720p ve
+480p; MP3 için 128, 192 ve 320 kbps çıktı seçenekleri bulunur. URL'yi komutta
+vermezseniz terminal ayrıca bağlantıyı da sorar:
+
+```powershell
+..\.venv\Scripts\python.exe -m app.cli --output-dir ..\downloads
+```
+
 İndirilen dosyalar seçilen klasöre, tekrar indirme arşivi ise aynı klasördeki
 `.downloaded.txt` dosyasına yazılır. İndirilen medya ve yerel veriler Git'e
 eklenmez.
