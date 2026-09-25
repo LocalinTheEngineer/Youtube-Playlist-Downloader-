@@ -2,7 +2,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 
 const desktopDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const projectRoot = path.resolve(desktopDirectory, '..')
@@ -64,6 +64,7 @@ function startBackend(port) {
       YTDL_DOWNLOAD_ROOT: downloadsDirectory,
       YTDL_FRONTEND_DIST: runtime.frontend,
       YTDL_NODE_PATH: process.execPath,
+      YTDL_ALLOW_ABSOLUTE_OUTPUT: 'true',
     },
   })
   backendProcess.stdout.on('data', (chunk) => console.log(`[backend] ${chunk}`.trimEnd()))
@@ -116,6 +117,7 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(desktopDirectory, 'src', 'preload.mjs'),
     },
   })
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -131,6 +133,18 @@ async function createWindow() {
 
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
+  ipcMain.handle('playlist-studio:select-download-directory', async (event) => {
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    const options = {
+      title: 'İndirme klasörünü seç',
+      defaultPath: app.getPath('downloads'),
+      properties: ['openDirectory', 'createDirectory'],
+    }
+    const result = owner
+      ? await dialog.showOpenDialog(owner, options)
+      : await dialog.showOpenDialog(options)
+    return result.canceled ? null : result.filePaths[0] ?? null
+  })
   app.on('second-instance', () => {
     const window = BrowserWindow.getAllWindows()[0]
     if (window) { if (window.isMinimized()) window.restore(); window.focus() }

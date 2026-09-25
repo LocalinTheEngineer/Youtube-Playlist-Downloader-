@@ -29,7 +29,15 @@ DOWNLOAD_ROOT = settings.download_root.expanduser().resolve()
 
 def _output_path(value: str) -> Path:
     requested = Path(value).expanduser()
-    candidate = requested if requested.is_absolute() else DOWNLOAD_ROOT / requested
+    if requested.is_absolute():
+        resolved = requested.resolve()
+        if not resolved.is_relative_to(DOWNLOAD_ROOT) and not settings.allow_absolute_output:
+            raise HTTPException(
+                status_code=400,
+                detail="Mutlak çıktı klasörleri yalnızca masaüstü uygulamasında seçilebilir.",
+            )
+        return resolved
+    candidate = DOWNLOAD_ROOT / requested
     resolved = candidate.resolve()
     if not resolved.is_relative_to(DOWNLOAD_ROOT):
         raise HTTPException(

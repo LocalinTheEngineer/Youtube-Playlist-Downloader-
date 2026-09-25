@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownToLine, CircleAlert, Folder, HardDrive, LoaderCircle } from 'lucide-react'
+import { ArrowDownToLine, CircleAlert, Folder, FolderOpen, HardDrive, LoaderCircle } from 'lucide-react'
 import { createDownload, errorMessage } from '../services/api'
 import { useDownloadStore } from '../stores/downloadStore'
 import type { DownloadJob, FormatPreset } from '../types/download'
@@ -13,6 +13,8 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
   const client = useQueryClient()
   const submitting = useRef(false)
   const [pathError, setPathError] = useState('')
+  const [selectingFolder, setSelectingFolder] = useState(false)
+  const folderPicker = window.playlistStudio?.selectDownloadDirectory
   const selectedIds = new Set(store.selectedIds)
   const selectedEntries = store.media?.entries.filter((entry) => entry.id && selectedIds.has(entry.id)) ?? []
   const sizeEstimate = estimateDownloadSize(selectedEntries.map((entry) => entry.duration), store.formatPreset)
@@ -33,7 +35,7 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
       event.preventDefault()
       if (submitting.current || !ready || !store.selectedIds.length) return
       const directory = store.outputDirectory.trim()
-      if (/(^|[\\/])\.\.($|[\\/])|^[A-Za-z]:|^[\\/]|^~/.test(directory)) {
+      if (!folderPicker && /(^|[\\/])\.\.($|[\\/])|^[A-Za-z]:|^[\\/]|^~/.test(directory)) {
         setPathError(t('invalidFolder'))
         return
       }
@@ -55,7 +57,13 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
           </select></label>
         </div>
         <label htmlFor="output-directory">{t('targetFolder')}</label>
-        <div className="folder-field"><Folder size={17} aria-hidden="true" /><span>downloads /</span><input id="output-directory" value={store.outputDirectory} maxLength={2048} placeholder={t('folderExample')} onChange={(event) => { store.setOutputDirectory(event.target.value); setPathError('') }} aria-invalid={!!pathError} aria-describedby="folder-hint" /></div>
+        <div className="folder-field"><Folder size={17} aria-hidden="true" />{!folderPicker && <span>downloads /</span>}<input id="output-directory" value={store.outputDirectory} maxLength={2048} placeholder={t('folderExample')} readOnly={!!folderPicker} onChange={(event) => { store.setOutputDirectory(event.target.value); setPathError('') }} aria-invalid={!!pathError} aria-describedby="folder-hint" />{folderPicker && <button type="button" className="folder-picker-button" disabled={selectingFolder} onClick={async () => {
+          setSelectingFolder(true)
+          try {
+            const directory = await folderPicker()
+            if (directory) { store.setOutputDirectory(directory); setPathError('') }
+          } finally { setSelectingFolder(false) }
+        }}>{selectingFolder ? <LoaderCircle className="spin" size={15} /> : <FolderOpen size={15} />} {selectingFolder ? t('choosingFolder') : t('chooseFolder')}</button>}</div>
         <p className="hint" id="folder-hint">{t('folderHint')}</p>
         <div className="size-estimate" aria-live="polite">
           <span className="size-estimate-icon"><HardDrive size={18} aria-hidden="true" /></span>

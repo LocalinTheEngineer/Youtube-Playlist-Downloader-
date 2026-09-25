@@ -43,7 +43,7 @@ export default function App() {
       <div className="sidebar-spacer" />
       <div className={`sidebar-status ${system.data?.ready ? 'ready' : ''}`}><span className="status-dot" /><div><strong>{system.isPending ? t('checking') : system.data?.ready ? t('ready') : t('needsCheck')}</strong><span>{demoMode ? t('demoMode') : t('localService')}</span></div></div>
       <a className="sidebar-link" href="https://github.com/LocalinTheEngineer/Youtube-Playlist-Downloader-" target="_blank" rel="noreferrer"><Code2 size={15} />{t('github')}</a>
-      <div className="sidebar-version">Playlist Studio · v0.2.0</div>
+      <div className="sidebar-version">Playlist Studio · v0.3.0</div>
     </aside>
 
     <div className="app-surface">

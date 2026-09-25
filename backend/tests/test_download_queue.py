@@ -105,6 +105,17 @@ def test_create_download_rejects_bad_host_and_path_traversal(client, monkeypatch
     assert path_traversal.status_code == 400
 
 
+def test_absolute_output_is_only_allowed_for_desktop(monkeypatch, tmp_path):
+    chosen = tmp_path / "chosen"
+    monkeypatch.setattr(download_routes.settings, "allow_absolute_output", False)
+    with pytest.raises(Exception) as error:
+        download_routes._output_path(str(chosen))
+    assert error.value.status_code == 400
+
+    monkeypatch.setattr(download_routes.settings, "allow_absolute_output", True)
+    assert download_routes._output_path(str(chosen)) == chosen.resolve()
+
+
 def test_worker_processes_persisted_job_and_progress(session_factory, monkeypatch, tmp_path):
     import app.workers.download_worker as worker
 

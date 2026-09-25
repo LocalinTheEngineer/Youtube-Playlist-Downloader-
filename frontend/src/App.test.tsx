@@ -25,6 +25,7 @@ const preview: MediaPreview = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  delete window.playlistStudio
   useDownloadStore.getState().reset()
   useDownloadStore.setState({ formatPreset: 'best', outputDirectory: '', activeJobId: null })
   vi.mocked(checkSystem).mockResolvedValue({ ready: true, checked_at: '2026-09-23', components: [] })
@@ -82,6 +83,19 @@ const job: DownloadJob = {
   items: [{ id: 1, video_id: 'one', title: 'İlk video', status: 'queued', progress: 0, downloaded_bytes: 0, total_bytes: null, speed: null, eta: null, error_message: null }],
 }
 
+test('selects an absolute download folder through the desktop folder picker', async () => {
+  const selectDownloadDirectory = vi.fn().mockResolvedValue('D:\\Media\\Müzik')
+  window.playlistStudio = { selectDownloadDirectory }
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  vi.mocked(createDownload).mockResolvedValue({ ...job, output_directory: 'D:\\Media\\Müzik' })
+  const user = renderApp()
+  await user.click(screen.getByRole('button', { name: 'Gözat' }))
+  expect(selectDownloadDirectory).toHaveBeenCalledTimes(1)
+  expect(screen.getByLabelText('İndirme klasörü')).toHaveValue('D:\\Media\\Müzik')
+  await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
+  expect(createDownload).toHaveBeenCalledWith(expect.objectContaining({ output_directory: 'D:\\Media\\Müzik' }), expect.anything())
+})
+
 test('submits the inspected source with selected IDs, quality and folder', async () => {
   useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
   vi.mocked(createDownload).mockImplementation(async () => {
@@ -91,7 +105,7 @@ test('submits the inspected source with selected IDs, quality and folder', async
   const user = renderApp()
   await user.click(screen.getByRole('checkbox', { name: 'İkinci video' }))
   await user.selectOptions(screen.getByLabelText('Kalite'), '720p')
-  await user.type(screen.getByLabelText('Hedef alt klasör'), 'Müzik')
+  await user.type(screen.getByLabelText('İndirme klasörü'), 'Müzik')
   await waitFor(() => expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeEnabled())
   await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
   expect(await screen.findByText('İş kuyruğa eklendi. İlerlemeyi İndirmeler ekranından takip edebilirsin.')).toBeVisible()
@@ -105,10 +119,10 @@ test('submits the inspected source with selected IDs, quality and folder', async
 test('rejects folder traversal and disables submit with no selection', async () => {
   useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
   const user = renderApp()
-  await user.type(screen.getByLabelText('Hedef alt klasör'), '../outside')
+  await user.type(screen.getByLabelText('İndirme klasörü'), '../outside')
   await waitFor(() => expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeEnabled())
   await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
-  expect(await screen.findByRole('alert')).toHaveTextContent('alt klasör adı')
+  expect(await screen.findByRole('alert')).toHaveTextContent('Geçerli bir indirme klasörü')
   expect(createDownload).not.toHaveBeenCalled()
   await user.click(screen.getByRole('checkbox', { name: 'Tümünü seç' }))
   expect(screen.getByRole('button', { name: 'İndirmeyi başlat' })).toBeDisabled()

@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     download_root: Path = PROJECT_ROOT / "downloads"
     frontend_dist: Path | None = None
     node_path: Path | None = None
+    allow_absolute_output: bool = False
 
     model_config = SettingsConfigDict(env_prefix="YTDL_", env_file=".env", extra="ignore")
 

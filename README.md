@@ -20,6 +20,7 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 - Playlist içinden tümünü veya yalnız seçilen videoları indirme
 - MP4 için en yüksek, 1080p, 720p ve 480p; MP3 için kalite seçenekleri
 - Seçili videoların süresi ve kalite ayarına göre anlık MB/GB boyut tahmini
+- Windows Dosya Gezgini üzerinden istenen indirme klasörünü seçme
 - Türkçeye ek olarak İngilizce, Çince, Hintçe, İspanyolca, Arapça, Fransızca,
   Bengalce, Portekizce, Rusça ve Endonezce arayüz seçenekleri
 - İndirme kuyruğu, öğe bazında ilerleme, iptal ve yeniden deneme
@@ -48,11 +49,12 @@ backend'de uygulanmıştır.
 
 ## Windows uygulamasını kurma
 
-`desktop/release/Playlist-Studio-Setup-0.2.0.exe` dosyasını çalıştırın. Kurucu
+`desktop/release/Playlist-Studio-Setup-0.3.0.exe` dosyasını çalıştırın. Kurucu
 masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
 ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
 kurmaz. İndirilen dosyalar varsayılan olarak Windows
-`Downloads/Playlist Studio` klasörüne yazılır.
+`Downloads/Playlist Studio` klasörüne yazılır; indirme öncesinde Dosya Gezgini
+ile farklı bir klasör de seçebilirsiniz.
 
 ## Geliştirme gereksinimleri
 
@@ -131,8 +133,10 @@ görülmesi için backend'i yeni bir terminalden yeniden başlatın.
 gövdesiyle video veya playlist metadata'sını indirmeden inceler.
 `POST /api/downloads` indirilecek bağlantıyı, isteğe bağlı video ID listesini,
 çıktı dizinini ve `best/1080p/720p/480p/audio` preset'lerinden birini alır;
-işi SQLite'a kaydeder ve tek tüketicili yerel kuyruğa ekler. API ile çıktı
-yolu yalnızca proje içindeki `downloads/` klasörü altında seçilebilir.
+işi SQLite'a kaydeder ve tek tüketicili yerel kuyruğa ekler. API ile çıktı yolu
+varsayılan olarak yalnızca proje içindeki `downloads/` klasörü altında
+seçilebilir. Masaüstü uygulaması, Windows klasör seçicisinde kullanıcı tarafından
+onaylanan mutlak klasör yolunu kullanabilir.
 `GET /api/downloads` geçmişi, `GET /api/downloads/{job_id}` iş durumunu verir.
 `GET /api/downloads/{job_id}/events`, kalıcı iş ve video durumunu SSE üzerinden
 yaklaşık saniyede bir gönderir; iş sonlandığında akışı kapatır.
