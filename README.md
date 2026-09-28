@@ -52,7 +52,7 @@ backend'de uygulanmıştır.
 
 ## Windows uygulamasını kurma
 
-`desktop/release/Playlist-Studio-Setup-0.5.0.exe` dosyasını çalıştırın. Kurucu
+`desktop/release/Playlist-Studio-Setup-0.5.1.exe` dosyasını çalıştırın. Kurucu
 masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
 ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
 kurmaz. İndirilen dosyalar varsayılan olarak Windows

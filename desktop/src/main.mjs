@@ -55,7 +55,9 @@ function startBackend(port) {
   backendProcess = spawn(runtime.command, runtime.args, {
     cwd: runtime.cwd,
     windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    // Packaged GUI applications have no durable stdout/stderr console. Piping
+    // backend output into console.log can therefore crash Electron with EPIPE.
+    stdio: app.isPackaged ? 'ignore' : ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
       PATH: pathValue,
@@ -67,10 +69,10 @@ function startBackend(port) {
       YTDL_ALLOW_ABSOLUTE_OUTPUT: 'true',
     },
   })
-  backendProcess.stdout.on('data', (chunk) => console.log(`[backend] ${chunk}`.trimEnd()))
-  backendProcess.stderr.on('data', (chunk) => console.error(`[backend] ${chunk}`.trimEnd()))
+  backendProcess.stdout?.on('data', (chunk) => console.log(`[backend] ${chunk}`.trimEnd()))
+  backendProcess.stderr?.on('data', (chunk) => console.error(`[backend] ${chunk}`.trimEnd()))
   backendProcess.once('exit', (code, signal) => {
-    if (!quitting) console.error(`Backend kapandı (kod=${code}, sinyal=${signal}).`)
+    if (!quitting && !app.isPackaged) console.error(`Backend kapandı (kod=${code}, sinyal=${signal}).`)
     backendProcess = null
   })
 }
