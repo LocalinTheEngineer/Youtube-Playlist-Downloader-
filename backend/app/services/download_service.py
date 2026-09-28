@@ -59,7 +59,9 @@ def download_playlist(
         "postprocessor_hooks": [check_cancelled],
         "socket_timeout": 15,
         "retries": 3,
-        "download_archive": str(output_dir / ".downloaded.txt"),
+        # Keep audio and video histories separate. Otherwise a previous MP4
+        # download makes yt-dlp incorrectly skip a later MP3 request.
+        "download_archive": str(output_dir / f".downloaded-{format_preset}.txt"),
     }
     if playlist_items is not None:
         if not playlist_items or any(position < 1 for position in playlist_items):

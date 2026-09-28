@@ -10,11 +10,13 @@ data/
 node_modules/
 dist/
 .downloaded.txt
+.downloaded-*.txt
 *.part
 *.log
 *.egg-info/
 desktop/runtime/
 desktop/release/
+desktop/test-profile/
 backend/build/
 backend/dist/
 

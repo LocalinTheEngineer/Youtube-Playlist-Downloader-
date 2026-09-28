@@ -123,4 +123,5 @@ def test_download_service_passes_items_and_audio_bitrate_to_ytdlp(monkeypatch, t
     assert result == 0
     assert captured["playlist_items"] == "1,3,4"
     assert captured["postprocessors"][0]["preferredquality"] == "128"
+    assert captured["download_archive"].endswith(".downloaded-audio128.txt")
     assert "merge_output_format" not in captured

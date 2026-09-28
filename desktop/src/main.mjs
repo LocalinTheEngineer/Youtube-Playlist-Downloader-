@@ -117,7 +117,7 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: path.join(desktopDirectory, 'src', 'preload.mjs'),
+      preload: path.join(desktopDirectory, 'src', 'preload.cjs'),
     },
   })
   window.webContents.setWindowOpenHandler(({ url }) => {

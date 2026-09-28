@@ -12,6 +12,7 @@ UNAVAILABLE_STATES = frozenset(
     {"private", "premium_only", "subscriber_only", "needs_auth"}
 )
 UNAVAILABLE_TITLES = frozenset({"[Deleted video]", "[Private video]"})
+MAX_PLAYLIST_ITEMS = 100
 
 
 def inspect_media(url: str) -> dict[str, Any]:
@@ -23,6 +24,7 @@ def inspect_media(url: str) -> dict[str, Any]:
         "quiet": True,
         "no_warnings": True,
         "noplaylist": False,
+        "playlistend": MAX_PLAYLIST_ITEMS,
         "js_runtimes": {"node": node_runtime},
     }
     with YoutubeDL(options) as downloader:

@@ -67,6 +67,29 @@ def test_inspect_returns_flat_playlist_entries(monkeypatch):
     assert body["entries"][1]["position"] == 2
 
 
+def test_inspect_limits_mix_and_playlist_results_to_first_100(monkeypatch):
+    monkeypatch.setattr(
+        playlist_routes,
+        "inspect_media",
+        lambda _url: {
+            "title": "YouTube Mix",
+            "entries": [
+                {"id": f"video{index:06d}", "title": f"Video {index}"}
+                for index in range(1, 151)
+            ],
+        },
+    )
+
+    response = client.post(
+        "/api/media/inspect",
+        json={"url": "https://www.youtube.com/watch?v=abc12345678&list=RDabc12345678"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["item_count"] == 100
+    assert response.json()["entries"][-1]["position"] == 100
+
+
 def test_inspect_rejects_untrusted_host_before_extraction(monkeypatch):
     def fail_if_called(_url):
         raise AssertionError("extractor must not receive an untrusted URL")
