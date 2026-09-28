@@ -108,8 +108,25 @@ test('asks before downloading a completed item again', async () => {
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
   const user = renderApp()
   await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
-  expect(confirm).toHaveBeenCalledWith('Seçilen 1 öğe bu biçimde daha önce indirilmiş. Yeniden indirilsin mi?')
+  expect(confirm).toHaveBeenCalledWith('Seçilen 1 öğe bu biçimde daha önce indirilmiş. Tamam: yeniden indir. İptal: bunları atla ve kalanlarla devam et.')
   expect(vi.mocked(createDownload).mock.calls[1][0]).toEqual(expect.objectContaining({ allow_duplicates: true }))
+  confirm.mockRestore()
+})
+
+test('skips completed items and continues when duplicate confirmation is cancelled', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  const duplicateError = Object.assign(new Error('duplicate'), {
+    isAxiosError: true,
+    response: { status: 409, data: { detail: { code: 'duplicate_downloads', video_ids: ['one'] } } },
+  })
+  vi.mocked(createDownload)
+    .mockRejectedValueOnce(duplicateError)
+    .mockResolvedValueOnce({ ...job, items: [{ ...job.items[0], video_id: 'two' }] })
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  const user = renderApp()
+  await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
+  expect(vi.mocked(createDownload).mock.calls[1][0]).toEqual(expect.objectContaining({ video_ids: ['two'] }))
+  expect(vi.mocked(createDownload).mock.calls[1][0]).not.toHaveProperty('allow_duplicates')
   confirm.mockRestore()
 })
 

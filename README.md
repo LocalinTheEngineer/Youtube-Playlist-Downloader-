@@ -20,7 +20,8 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 - Playlist içinden tümünü veya yalnız seçilen videoları indirme
 - YouTube Mix ve uzun playlistlerde ilk 100 videoyu gösterme ve seçme
 - Değişen Mix sonuçlarında kullanıcının seçtiği videoları koruma
-- Aynı MP3 veya videoyu yeniden indirmeden önce kullanıcıdan onay alma
+- Aynı MP3 veya videoyu yeniden indirmeden önce kullanıcıdan onay alma; tekrarları
+  atlayıp kalan seçime devam edebilme
 - MP4 için en yüksek, 1080p, 720p ve 480p; MP3 için kalite seçenekleri
 - Seçili videoların süresi ve kalite ayarına göre anlık MB/GB boyut tahmini
 - Windows Dosya Gezgini üzerinden istenen indirme klasörünü seçme
@@ -52,7 +53,7 @@ backend'de uygulanmıştır.
 
 ## Windows uygulamasını kurma
 
-`desktop/release/Playlist-Studio-Setup-0.5.1.exe` dosyasını çalıştırın. Kurucu
+`desktop/release/Playlist-Studio-Setup-0.5.2.exe` dosyasını çalıştırın. Kurucu
 masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
 ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
 kurmaz. İndirilen dosyalar varsayılan olarak Windows

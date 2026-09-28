@@ -50,11 +50,17 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
         } catch (error) {
           const duplicates = duplicateDownloadIds(error)
           if (!duplicates) throw error
-          if (!window.confirm(t('duplicateConfirm', { count: duplicates.length }))) {
+          if (window.confirm(t('duplicateConfirm', { count: duplicates.length }))) {
+            await mutation.mutateAsync({ ...request, allow_duplicates: true })
+            return
+          }
+          const duplicateSet = new Set(duplicates)
+          const remainingIds = request.video_ids.filter((id) => !duplicateSet.has(id))
+          if (!remainingIds.length) {
             setDuplicateCancelled(true)
             return
           }
-          await mutation.mutateAsync({ ...request, allow_duplicates: true })
+          await mutation.mutateAsync({ ...request, video_ids: remainingIds })
         }
       } catch { /* The mutation error is rendered below. */ }
       finally { submitting.current = false }
@@ -89,7 +95,7 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
       </fieldset>
       {!ready && <p className="hint">{t('systemFix')}</p>}
       {(pathError || (mutation.isError && !duplicateCancelled)) && <div className="error" role="alert"><CircleAlert size={18} /><span>{pathError || errorMessage(mutation.error, t('startError'))}</span></div>}
-      {duplicateCancelled && <p className="hint" role="status">{t('duplicateCancelled')}</p>}
+      {duplicateCancelled && <p className="hint" role="status">{t('duplicateAllSkipped')}</p>}
       {mutation.isSuccess && <p className="success-message" role="status">{demo ? t('demoSuccess') : t('queuedSuccess')}</p>}
     </form>
   </section>
