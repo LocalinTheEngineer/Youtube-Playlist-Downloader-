@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownToLine, CircleAlert, Folder, FolderOpen, HardDrive, LoaderCircle } from 'lucide-react'
-import { createDownload, errorMessage } from '../services/api'
+import { createDownload, duplicateDownloadIds, errorMessage } from '../services/api'
 import { useDownloadStore } from '../stores/downloadStore'
 import type { DownloadJob, FormatPreset } from '../types/download'
 import { estimateDownloadSize, formatBytes } from '../utils/sizeEstimate'
@@ -14,6 +14,7 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
   const submitting = useRef(false)
   const [pathError, setPathError] = useState('')
   const [selectingFolder, setSelectingFolder] = useState(false)
+  const [duplicateCancelled, setDuplicateCancelled] = useState(false)
   const folderPicker = window.playlistStudio?.selectDownloadDirectory
   const selectedIds = new Set(store.selectedIds)
   const selectedEntries = store.media?.entries.filter((entry) => entry.id && selectedIds.has(entry.id)) ?? []
@@ -40,9 +41,21 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
         return
       }
       setPathError('')
+      setDuplicateCancelled(false)
       submitting.current = true
       try {
-        await mutation.mutateAsync({ url: store.sourceUrl, video_ids: [...store.selectedIds], format_preset: store.formatPreset, output_directory: directory || '.' })
+        const request = { url: store.sourceUrl, video_ids: [...store.selectedIds], format_preset: store.formatPreset, output_directory: directory || '.' }
+        try {
+          await mutation.mutateAsync(request)
+        } catch (error) {
+          const duplicates = duplicateDownloadIds(error)
+          if (!duplicates) throw error
+          if (!window.confirm(t('duplicateConfirm', { count: duplicates.length }))) {
+            setDuplicateCancelled(true)
+            return
+          }
+          await mutation.mutateAsync({ ...request, allow_duplicates: true })
+        }
       } catch { /* The mutation error is rendered below. */ }
       finally { submitting.current = false }
     }}>
@@ -75,7 +88,8 @@ export function DownloadSettings({ ready, demo = false }: { ready: boolean; demo
         </button></div>
       </fieldset>
       {!ready && <p className="hint">{t('systemFix')}</p>}
-      {(pathError || mutation.isError) && <div className="error" role="alert"><CircleAlert size={18} /><span>{pathError || errorMessage(mutation.error, t('startError'))}</span></div>}
+      {(pathError || (mutation.isError && !duplicateCancelled)) && <div className="error" role="alert"><CircleAlert size={18} /><span>{pathError || errorMessage(mutation.error, t('startError'))}</span></div>}
+      {duplicateCancelled && <p className="hint" role="status">{t('duplicateCancelled')}</p>}
       {mutation.isSuccess && <p className="success-message" role="status">{demo ? t('demoSuccess') : t('queuedSuccess')}</p>}
     </form>
   </section>

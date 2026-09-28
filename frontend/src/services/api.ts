@@ -29,6 +29,14 @@ export async function createDownload(request: CreateDownload): Promise<DownloadJ
   return (await api.post<DownloadJob>('/downloads', request)).data
 }
 
+export function duplicateDownloadIds(error: unknown): string[] | null {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) return null
+  const detail: unknown = error.response.data?.detail
+  if (!detail || typeof detail !== 'object' || !('code' in detail) || detail.code !== 'duplicate_downloads') return null
+  if (!('video_ids' in detail) || !Array.isArray(detail.video_ids)) return null
+  return detail.video_ids.filter((id): id is string => typeof id === 'string')
+}
+
 export async function listDownloads(): Promise<DownloadJob[]> {
   if (demoMode) return listDemoDownloads()
   return (await api.get<DownloadJob[]>('/downloads', { timeout: 15_000 })).data

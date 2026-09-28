@@ -84,6 +84,73 @@ def test_create_download_persists_job_and_queues_it(client, monkeypatch):
     assert enqueued == [body["id"]]
 
 
+def test_mix_keeps_selected_ids_when_second_inspection_changes(client, monkeypatch):
+    monkeypatch.setattr(
+        download_routes,
+        "inspect_media",
+        lambda _url: {
+            "id": "RDmix",
+            "title": "Changing Mix",
+            "entries": [{"id": "different01", "title": "Different result"}],
+        },
+    )
+    async def record(_job_id):
+        return None
+
+    monkeypatch.setattr(download_routes, "enqueue_download", record)
+    response = client.post(
+        "/api/downloads",
+        json={
+            "url": "https://www.youtube.com/watch?v=abc12345678&list=RDabc12345678",
+            "video_ids": ["abc12345678"],
+            "format_preset": "audio",
+        },
+    )
+
+    assert response.status_code == 202, response.text
+    assert response.json()["items"][0]["video_id"] == "abc12345678"
+
+
+def test_duplicate_completed_download_requires_confirmation(client, monkeypatch, session_factory):
+    with session_factory() as session:
+        session.add(DownloadJob(
+            source_url="https://youtu.be/abc12345678",
+            output_directory="downloads",
+            format_preset="audio",
+            status="completed",
+            total_items=1,
+            completed_items=1,
+            items=[DownloadItem(video_id="abc12345678", title="Song", status="completed", progress=100)],
+        ))
+        session.commit()
+
+    monkeypatch.setattr(
+        download_routes,
+        "inspect_media",
+        lambda _url: {"id": "abc12345678", "title": "Song"},
+    )
+
+    blocked = client.post("/api/downloads", json={
+        "url": "https://youtu.be/abc12345678",
+        "video_ids": ["abc12345678"],
+        "format_preset": "audio",
+    })
+    assert blocked.status_code == 409
+    assert blocked.json()["detail"]["code"] == "duplicate_downloads"
+
+    async def record(_job_id):
+        return None
+
+    monkeypatch.setattr(download_routes, "enqueue_download", record)
+    allowed = client.post("/api/downloads", json={
+        "url": "https://youtu.be/abc12345678",
+        "video_ids": ["abc12345678"],
+        "format_preset": "audio",
+        "allow_duplicates": True,
+    })
+    assert allowed.status_code == 202, allowed.text
+
+
 def test_create_download_rejects_bad_host_and_path_traversal(client, monkeypatch):
     monkeypatch.setattr(
         download_routes,

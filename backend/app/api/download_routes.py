@@ -25,6 +25,7 @@ from app.workers.download_worker import download_queue
 
 router = APIRouter(prefix="/api/downloads", tags=["downloads"])
 DOWNLOAD_ROOT = settings.download_root.expanduser().resolve()
+AUDIO_PRESETS = ("audio", "audio128", "audio192", "audio320")
 
 
 def _output_path(value: str) -> Path:
@@ -124,15 +125,46 @@ async def create_download(
             raise HTTPException(status_code=422, detail="En az bir video seçilmelidir.")
         if len(request.video_ids) != len(set(request.video_ids)):
             raise HTTPException(status_code=422, detail="Video listesinde tekrar eden kimlik var.")
-        missing = set(request.video_ids) - set(available)
-        if missing:
-            raise HTTPException(status_code=422, detail="Seçilen video bu içerikte bulunamadı.")
-        entries = [available[video_id] for video_id in request.video_ids]
+        # YouTube Mix results can change between preview and submission. Keep
+        # the IDs the user actually selected instead of rejecting a valid Mix.
+        entries = [
+            available.get(video_id) or {
+                "id": video_id,
+                "title": video_id,
+                "playlist_index": index,
+            }
+            for index, video_id in enumerate(request.video_ids, start=1)
+        ]
     else:
         entries = list(available.values())
 
     if not entries:
         raise HTTPException(status_code=422, detail="İndirilebilir video bulunamadı.")
+
+    selected_ids = [str(entry["id"]) for entry in entries]
+    if not request.allow_duplicates:
+        same_media_type = DownloadJob.format_preset.in_(AUDIO_PRESETS)
+        if request.format_preset not in AUDIO_PRESETS:
+            same_media_type = DownloadJob.format_preset.not_in(AUDIO_PRESETS)
+        duplicate_ids = session.scalars(
+            select(DownloadItem.video_id)
+            .join(DownloadJob)
+            .where(
+                DownloadItem.video_id.in_(selected_ids),
+                DownloadItem.status == "completed",
+                same_media_type,
+            )
+            .distinct()
+        ).all()
+        if duplicate_ids:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "duplicate_downloads",
+                    "video_ids": sorted(duplicate_ids),
+                    "message": "Bazı seçili öğeler daha önce indirilmiş.",
+                },
+            )
 
     output_directory.mkdir(parents=True, exist_ok=True)
     job = DownloadJob(

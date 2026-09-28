@@ -96,6 +96,23 @@ test('selects an absolute download folder through the desktop folder picker', as
   expect(createDownload).toHaveBeenCalledWith(expect.objectContaining({ output_directory: 'D:\\Media\\Müzik' }), expect.anything())
 })
 
+test('asks before downloading a completed item again', async () => {
+  useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
+  const duplicateError = Object.assign(new Error('duplicate'), {
+    isAxiosError: true,
+    response: { status: 409, data: { detail: { code: 'duplicate_downloads', video_ids: ['one'] } } },
+  })
+  vi.mocked(createDownload)
+    .mockRejectedValueOnce(duplicateError)
+    .mockResolvedValueOnce(job)
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  const user = renderApp()
+  await user.click(screen.getByRole('button', { name: 'İndirmeyi başlat' }))
+  expect(confirm).toHaveBeenCalledWith('Seçilen 1 öğe bu biçimde daha önce indirilmiş. Yeniden indirilsin mi?')
+  expect(vi.mocked(createDownload).mock.calls[1][0]).toEqual(expect.objectContaining({ allow_duplicates: true }))
+  confirm.mockRestore()
+})
+
 test('submits the inspected source with selected IDs, quality and folder', async () => {
   useDownloadStore.getState().setMedia(preview, 'https://youtube.com/playlist?list=PLtest')
   vi.mocked(createDownload).mockImplementation(async () => {

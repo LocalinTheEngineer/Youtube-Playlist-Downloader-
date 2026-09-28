@@ -6,6 +6,7 @@ export interface CreateDownload {
   video_ids: string[]
   format_preset: FormatPreset
   output_directory: string
+  allow_duplicates?: boolean
 }
 
 export interface DownloadItem {

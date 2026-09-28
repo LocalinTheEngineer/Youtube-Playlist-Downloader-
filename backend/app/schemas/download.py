@@ -13,6 +13,7 @@ class CreateDownloadRequest(BaseModel):
     output_directory: str = Field(default=".", min_length=1, max_length=2048)
     format_preset: FormatPreset = "best"
     video_ids: list[str] | None = None
+    allow_duplicates: bool = False
 
 
 class DownloadItemResponse(BaseModel):
