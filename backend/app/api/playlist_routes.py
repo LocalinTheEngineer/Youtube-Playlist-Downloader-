@@ -6,7 +6,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.playlist import InspectRequest, InspectResponse, MediaEntry
-from app.services.media_service import MAX_PLAYLIST_ITEMS, inspect_media, is_entry_available
+from app.services.media_service import inspect_media, inspection_limit, is_entry_available
 from app.services.url_validator import validate_youtube_url
 
 router = APIRouter(prefix="/api/media", tags=["media"])
@@ -37,7 +37,7 @@ def inspect(request: InspectRequest) -> InspectResponse:
 
     raw_entries = metadata.get("entries")
     entries = []
-    inspected_entries = raw_entries[:MAX_PLAYLIST_ITEMS] if raw_entries is not None else [metadata]
+    inspected_entries = raw_entries[:inspection_limit(url)] if raw_entries is not None else [metadata]
     for position, raw in enumerate(inspected_entries, start=1):
         entry = raw or {}
         video_id = str(entry["id"]) if entry.get("id") is not None else None

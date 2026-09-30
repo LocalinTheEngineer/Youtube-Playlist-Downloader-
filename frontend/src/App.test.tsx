@@ -3,14 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, test, vi } from 'vitest'
 import App from './App'
-import { inspectMedia, checkSystem, createDownload, listDownloads, cancelDownload, retryDownload } from './services/api'
+import { inspectMedia, checkSystem, createDownload, listDownloads, cancelDownload, pauseDownload, resumeDownload, retryDownload } from './services/api'
 import { useDownloadStore } from './stores/downloadStore'
 import type { MediaPreview } from './types/media'
 import type { DownloadJob } from './types/download'
 
 vi.mock('./services/api', async (importOriginal) => ({
   ...await importOriginal<typeof import('./services/api')>(),
-  inspectMedia: vi.fn(), checkSystem: vi.fn(), createDownload: vi.fn(), listDownloads: vi.fn(), cancelDownload: vi.fn(), retryDownload: vi.fn(),
+  inspectMedia: vi.fn(), checkSystem: vi.fn(), createDownload: vi.fn(), listDownloads: vi.fn(), cancelDownload: vi.fn(), pauseDownload: vi.fn(), resumeDownload: vi.fn(), retryDownload: vi.fn(),
 }))
 
 const preview: MediaPreview = {
@@ -191,6 +191,24 @@ test('requests cancellation and keeps pending cancellation distinct from complet
   expect(await screen.findByText('İptal bekleniyor')).toBeVisible()
   expect(screen.getByRole('button', { name: 'İptal istendi' })).toBeDisabled()
   expect(vi.mocked(cancelDownload).mock.calls[0][0]).toBe(job.id)
+})
+
+test('pauses an active download', async () => {
+  vi.mocked(listDownloads).mockResolvedValue([{ ...job, status: 'downloading' }])
+  vi.mocked(pauseDownload).mockResolvedValue({ id: job.id, status: 'paused' })
+  const user = renderApp()
+  await user.click(screen.getByRole('button', { name: 'İndirmeler' }))
+  await user.click(await screen.findByRole('button', { name: 'Duraklat' }))
+  await waitFor(() => expect(vi.mocked(pauseDownload).mock.calls[0][0]).toBe(job.id))
+})
+
+test('resumes a paused download', async () => {
+  vi.mocked(listDownloads).mockResolvedValue([{ ...job, status: 'paused', items: [{ ...job.items[0], status: 'paused' }] }])
+  vi.mocked(resumeDownload).mockResolvedValue({ id: job.id, status: 'downloading' })
+  const user = renderApp()
+  await user.click(screen.getByRole('button', { name: 'İndirmeler' }))
+  await user.click(await screen.findByRole('button', { name: 'Devam et' }))
+  await waitFor(() => expect(vi.mocked(resumeDownload).mock.calls[0][0]).toBe(job.id))
 })
 
 test('retry tracks the new job rather than changing the failed job', async () => {

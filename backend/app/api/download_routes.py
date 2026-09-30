@@ -229,6 +229,28 @@ async def cancel_download(job_id: str) -> dict[str, str]:
     return {"id": job_id, "status": "cancelled" if finished else "cancel_requested"}
 
 
+@router.post("/{job_id}/pause", status_code=202)
+async def pause_download(job_id: str) -> dict[str, str]:
+    try:
+        await asyncio.to_thread(download_queue.pause, job_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"id": job_id, "status": JobStatus.PAUSED.value}
+
+
+@router.post("/{job_id}/resume", status_code=202)
+async def resume_download(job_id: str) -> dict[str, str]:
+    try:
+        await asyncio.to_thread(download_queue.resume, job_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"id": job_id, "status": JobStatus.DOWNLOADING.value}
+
+
 @router.post("/{job_id}/retry", response_model=DownloadJobResponse, status_code=202)
 async def retry_download(
     job_id: str, session: Session = Depends(get_session),

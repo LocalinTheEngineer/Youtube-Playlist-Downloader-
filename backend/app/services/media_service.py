@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from yt_dlp import YoutubeDL
 
@@ -13,6 +14,13 @@ UNAVAILABLE_STATES = frozenset(
 )
 UNAVAILABLE_TITLES = frozenset({"[Deleted video]", "[Private video]"})
 MAX_PLAYLIST_ITEMS = 100
+MAX_MIX_ITEMS = 50
+
+
+def inspection_limit(url: str) -> int:
+    """Use a smaller bound for YouTube's effectively endless RD mix lists."""
+    playlist_id = parse_qs(urlparse(url).query).get("list", [""])[0]
+    return MAX_MIX_ITEMS if playlist_id.startswith("RD") else MAX_PLAYLIST_ITEMS
 
 
 def inspect_media(url: str) -> dict[str, Any]:
@@ -24,7 +32,7 @@ def inspect_media(url: str) -> dict[str, Any]:
         "quiet": True,
         "no_warnings": True,
         "noplaylist": False,
-        "playlistend": MAX_PLAYLIST_ITEMS,
+        "playlistend": inspection_limit(url),
         "js_runtimes": {"node": node_runtime},
     }
     with YoutubeDL(options) as downloader:

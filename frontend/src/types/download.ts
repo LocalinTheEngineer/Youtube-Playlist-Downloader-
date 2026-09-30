@@ -1,5 +1,5 @@
 export type FormatPreset = 'best' | '1080p' | '720p' | '480p' | 'audio'
-export type JobStatus = 'queued' | 'inspecting' | 'downloading' | 'postprocessing' | 'completed' | 'failed' | 'cancelled' | 'interrupted'
+export type JobStatus = 'queued' | 'inspecting' | 'downloading' | 'postprocessing' | 'paused' | 'completed' | 'failed' | 'cancelled' | 'interrupted'
 
 export interface CreateDownload {
   url: string

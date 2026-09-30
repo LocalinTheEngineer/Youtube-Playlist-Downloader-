@@ -17,6 +17,7 @@ class JobStatus(StrEnum):
     INSPECTING = "inspecting"
     DOWNLOADING = "downloading"
     POSTPROCESSING = "postprocessing"
+    PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"

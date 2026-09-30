@@ -4,7 +4,7 @@ import { openDownloadEvents } from '../services/api'
 import { isTerminal } from '../types/download'
 import type { DownloadJob } from '../types/download'
 
-const statuses = ['queued', 'inspecting', 'downloading', 'postprocessing', 'completed', 'failed', 'cancelled', 'interrupted']
+const statuses = ['queued', 'inspecting', 'downloading', 'postprocessing', 'paused', 'completed', 'failed', 'cancelled', 'interrupted']
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const optionalString = (value: unknown) => value === null || typeof value === 'string'
 const number = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0

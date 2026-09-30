@@ -67,7 +67,7 @@ def test_inspect_returns_flat_playlist_entries(monkeypatch):
     assert body["entries"][1]["position"] == 2
 
 
-def test_inspect_limits_mix_and_playlist_results_to_first_100(monkeypatch):
+def test_inspect_limits_mix_results_to_first_50(monkeypatch):
     monkeypatch.setattr(
         playlist_routes,
         "inspect_media",
@@ -86,8 +86,8 @@ def test_inspect_limits_mix_and_playlist_results_to_first_100(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json()["item_count"] == 100
-    assert response.json()["entries"][-1]["position"] == 100
+    assert response.json()["item_count"] == 50
+    assert response.json()["entries"][-1]["position"] == 50
 
 
 def test_inspect_rejects_untrusted_host_before_extraction(monkeypatch):

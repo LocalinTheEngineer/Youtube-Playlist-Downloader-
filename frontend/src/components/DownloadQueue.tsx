@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download } from 'lucide-react'
-import { cancelDownload, errorMessage, listDownloads, retryDownload } from '../services/api'
+import { Download, Pause, Play } from 'lucide-react'
+import { cancelDownload, errorMessage, listDownloads, pauseDownload, resumeDownload, retryDownload } from '../services/api'
 import { isTerminal } from '../types/download'
 import type { DownloadJob } from '../types/download'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useDownloadEvents } from '../hooks/useDownloadEvents'
 import { useI18n } from '../i18n/i18n'
 
-const statusKeys = { queued: 'statusQueued', inspecting: 'statusInspecting', downloading: 'statusDownloading', postprocessing: 'statusPostprocessing', completed: 'statusCompleted', failed: 'statusFailed', cancelled: 'statusCancelled', interrupted: 'statusInterrupted', skipped: 'statusSkipped' } as const
+const statusKeys = { queued: 'statusQueued', inspecting: 'statusInspecting', downloading: 'statusDownloading', postprocessing: 'statusPostprocessing', paused: 'statusPaused', completed: 'statusCompleted', failed: 'statusFailed', cancelled: 'statusCancelled', interrupted: 'statusInterrupted', skipped: 'statusSkipped' } as const
 
 function JobCard({ job, streaming }: { job: DownloadJob; streaming: boolean }) {
   const { t } = useI18n()
@@ -17,6 +17,8 @@ function JobCard({ job, streaming }: { job: DownloadJob; streaming: boolean }) {
   const { activeJobId, setActiveJob } = useDownloadStore()
   const [cancelRequested, setCancelRequested] = useState(false)
   const cancel = useMutation({ mutationFn: cancelDownload, onSuccess: () => { setCancelRequested(true); void client.invalidateQueries({ queryKey: ['downloads'] }) } })
+  const pause = useMutation({ mutationFn: pauseDownload, onSuccess: () => void client.invalidateQueries({ queryKey: ['downloads'] }) })
+  const resume = useMutation({ mutationFn: resumeDownload, onSuccess: () => void client.invalidateQueries({ queryKey: ['downloads'] }) })
   const retry = useMutation({ mutationFn: retryDownload, onSuccess: (newJob) => {
     setActiveJob(newJob.id)
     client.setQueryData<DownloadJob[]>(['downloads'], (jobs = []) => [newJob, ...jobs.filter((item) => item.id !== newJob.id)])
@@ -36,8 +38,8 @@ function JobCard({ job, streaming }: { job: DownloadJob; streaming: boolean }) {
     </li>)}</ul></details>
     <p className="job-path">{job.output_directory}</p>
     {job.error_message && <p className="error-text">{job.error_message}</p>}
-    <div className="job-actions">{!terminal && <button className="secondary" disabled={cancel.isPending || cancelRequested} onClick={() => cancel.mutate(job.id)}>{cancelRequested ? t('cancelRequested') : t('cancel')}</button>}{job.status === 'failed' && <button className="secondary" disabled={retry.isPending} onClick={() => retry.mutate(job.id)}>{t('retryFailed')}</button>}</div>
-    {(cancel.isError || retry.isError) && <p className="error-text" role="alert">{errorMessage(cancel.error || retry.error, t('operationError'))}</p>}
+    <div className="job-actions">{job.status === 'downloading' && <button className="secondary" disabled={pause.isPending} onClick={() => pause.mutate(job.id)}><Pause size={14} />{t('pause')}</button>}{job.status === 'paused' && <button className="secondary" disabled={resume.isPending} onClick={() => resume.mutate(job.id)}><Play size={14} />{t('resume')}</button>}{!terminal && <button className="secondary" disabled={cancel.isPending || cancelRequested} onClick={() => cancel.mutate(job.id)}>{cancelRequested ? t('cancelRequested') : t('cancel')}</button>}{job.status === 'failed' && <button className="secondary" disabled={retry.isPending} onClick={() => retry.mutate(job.id)}>{t('retryFailed')}</button>}</div>
+    {(cancel.isError || pause.isError || resume.isError || retry.isError) && <p className="error-text" role="alert">{errorMessage(cancel.error || pause.error || resume.error || retry.error, t('operationError'))}</p>}
   </article>
 }
 

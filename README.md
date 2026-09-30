@@ -18,7 +18,7 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 
 - Windows'a kurulabilen, web tarayıcısı gerektirmeyen masaüstü arayüzü
 - Playlist içinden tümünü veya yalnız seçilen videoları indirme
-- YouTube Mix ve uzun playlistlerde ilk 100 videoyu gösterme ve seçme
+- YouTube Mix listelerinde ilk 50, diğer uzun playlistlerde ilk 100 videoyu gösterme ve seçme
 - Değişen Mix sonuçlarında kullanıcının seçtiği videoları koruma
 - Aynı MP3 veya videoyu yeniden indirmeden önce kullanıcıdan onay alma; tekrarları
   atlayıp kalan seçime devam edebilme
@@ -27,7 +27,7 @@ ve bağlantı sorunlarında durumu almak için 15 saniyelik yedek sorgu kullanı
 - Windows Dosya Gezgini üzerinden istenen indirme klasörünü seçme
 - Türkçeye ek olarak İngilizce, Çince, Hintçe, İspanyolca, Arapça, Fransızca,
   Bengalce, Portekizce, Rusça ve Endonezce arayüz seçenekleri
-- İndirme kuyruğu, öğe bazında ilerleme, iptal ve yeniden deneme
+- İndirme kuyruğu, öğe bazında ilerleme, duraklatma/devam ettirme, iptal ve yeniden deneme
 - Tek video ve playlist bağlantılarını terminalden işleme
 - Desteklenen YouTube alan adları için HTTPS URL doğrulaması
 - 18 yaş kısıtlı içerikleri indirmeyi reddeden backend filtresi
@@ -53,7 +53,7 @@ backend'de uygulanmıştır.
 
 ## Windows uygulamasını kurma
 
-`desktop/release/Playlist-Studio-Setup-0.5.2.exe` dosyasını çalıştırın. Kurucu
+`desktop/release/Playlist-Studio-Setup-0.6.0.exe` dosyasını çalıştırın. Kurucu
 masaüstü ve Başlat menüsü kısayollarını oluşturabilir. Uygulama Python, Node.js
 ve FFmpeg çalışma dosyalarını kendi içinde taşır; son kullanıcı bunları ayrıca
 kurmaz. İndirilen dosyalar varsayılan olarak Windows

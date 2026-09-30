@@ -174,6 +174,26 @@ export async function cancelDemoDownload(id: string): Promise<{ id: string; stat
   return { id, status: 'cancelled' }
 }
 
+export async function pauseDemoDownload(id: string): Promise<{ id: string; status: string }> {
+  const job = jobs.get(id)
+  if (!job || job.status !== 'downloading') throw new Error('Yalnızca aktif indirme duraklatılabilir.')
+  stopTimer(id)
+  job.status = 'paused'
+  job.items.forEach((item) => { if (item.status === 'downloading') item.status = 'paused' })
+  publish(job)
+  return { id, status: 'paused' }
+}
+
+export async function resumeDemoDownload(id: string): Promise<{ id: string; status: string }> {
+  const job = jobs.get(id)
+  if (!job || job.status !== 'paused') throw new Error('Yalnızca duraklatılmış indirme devam ettirilebilir.')
+  job.status = 'downloading'
+  job.items.forEach((item) => { if (item.status === 'paused') item.status = 'downloading' })
+  publish(job)
+  runDemo(id)
+  return { id, status: 'downloading' }
+}
+
 export async function retryDemoDownload(): Promise<DownloadJob> {
   throw new Error('Demo işlerinde yeniden deneme gerekmiyor.')
 }

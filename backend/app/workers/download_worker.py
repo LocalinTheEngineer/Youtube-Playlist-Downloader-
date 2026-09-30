@@ -25,11 +25,15 @@ class DownloadQueue:
         self._queue: asyncio.Queue[str | None] = asyncio.Queue()
         self._task: asyncio.Task[None] | None = None
         self._signals: dict[str, Event] = {}
+        self._pause_signals: dict[str, Event] = {}
         self._state_lock = RLock()
 
     async def start(self) -> None:
         if self._task is None or self._task.done():
             self._queue = asyncio.Queue()
+            with self._state_lock:
+                self._signals.clear()
+                self._pause_signals.clear()
             self._task = asyncio.create_task(self._run(), name="download-worker")
 
     async def stop(self) -> None:
@@ -48,7 +52,38 @@ class DownloadQueue:
             raise RuntimeError("Download worker is not running")
         with self._state_lock:
             self._signals.setdefault(job_id, Event())
+            self._pause_signals.setdefault(job_id, Event())
         await self._queue.put(job_id)
+
+    def pause(self, job_id: str) -> None:
+        with self._state_lock, SessionLocal() as session:
+            job = session.get(DownloadJob, job_id)
+            if job is None:
+                raise LookupError("İndirme işi bulunamadı.")
+            if job.status != JobStatus.DOWNLOADING.value:
+                raise ValueError("Yalnızca aktif indirme duraklatılabilir.")
+            self._pause_signals.setdefault(job_id, Event()).set()
+            job.status = JobStatus.PAUSED.value
+            for item in job.items:
+                if item.status == "downloading":
+                    item.status = JobStatus.PAUSED.value
+                    item.speed = None
+                    item.eta = None
+            session.commit()
+
+    def resume(self, job_id: str) -> None:
+        with self._state_lock, SessionLocal() as session:
+            job = session.get(DownloadJob, job_id)
+            if job is None:
+                raise LookupError("İndirme işi bulunamadı.")
+            if job.status != JobStatus.PAUSED.value:
+                raise ValueError("Yalnızca duraklatılmış indirme devam ettirilebilir.")
+            self._pause_signals.setdefault(job_id, Event()).clear()
+            job.status = JobStatus.DOWNLOADING.value
+            for item in job.items:
+                if item.status == JobStatus.PAUSED.value:
+                    item.status = JobStatus.DOWNLOADING.value
+            session.commit()
 
     def cancel(self, job_id: str) -> bool:
         """Return True when cancelled; False when waiting for a worker checkpoint."""
@@ -58,7 +93,7 @@ class DownloadQueue:
                 raise LookupError("İndirme işi bulunamadı.")
             if job.status == JobStatus.CANCELLED.value:
                 return True
-            if job.status not in {"queued", "inspecting", "downloading", "postprocessing"}:
+            if job.status not in {"queued", "inspecting", "downloading", "postprocessing", "paused"}:
                 raise ValueError("Sonlanmış bir iş iptal edilemez.")
             self._signals.setdefault(job_id, Event()).set()
             queued = job.status == JobStatus.QUEUED.value
@@ -81,8 +116,9 @@ class DownloadQueue:
     def _process_job(self, job_id: str) -> None:
         with self._state_lock:
             signal = self._signals.setdefault(job_id, Event())
+            pause_signal = self._pause_signals.setdefault(job_id, Event())
         try:
-            self._download_job(job_id, signal)
+            self._download_job(job_id, signal, pause_signal)
         except DownloadCancelled:
             self._mark_cancelled(job_id)
         except Exception:
@@ -97,6 +133,7 @@ class DownloadQueue:
         finally:
             with self._state_lock:
                 self._signals.pop(job_id, None)
+                self._pause_signals.pop(job_id, None)
 
     def _mark_cancelled(self, job_id: str) -> None:
         with self._state_lock, SessionLocal() as session:
@@ -106,7 +143,7 @@ class DownloadQueue:
             job.status = JobStatus.CANCELLED.value
             job.finished_at = datetime.now(timezone.utc)
             for item in job.items:
-                if item.status in {"queued", "inspecting", "downloading", "postprocessing"}:
+                if item.status in {"queued", "inspecting", "downloading", "postprocessing", "paused"}:
                     item.status = "cancelled"
                     item.speed = None
                     item.eta = None
@@ -119,7 +156,14 @@ class DownloadQueue:
         if signal.is_set():
             raise DownloadCancelled("İndirme iptal edildi.")
 
-    def _download_job(self, job_id: str, signal: Event) -> None:
+    @staticmethod
+    def _wait_if_paused(signal: Event, pause_signal: Event) -> None:
+        while pause_signal.is_set():
+            if signal.wait(0.2):
+                raise DownloadCancelled("İndirme iptal edildi.")
+
+    def _download_job(self, job_id: str, signal: Event, pause_signal: Event | None = None) -> None:
+        pause_signal = pause_signal or Event()
         with self._state_lock, SessionLocal() as session:
             job = session.get(DownloadJob, job_id)
             if job is None or job.status != JobStatus.QUEUED.value:
@@ -139,6 +183,7 @@ class DownloadQueue:
         failed = 0
         for item_id, video_id, _title in work:
             self._check_cancelled(signal)
+            self._wait_if_paused(signal, pause_signal)
             if not video_id:
                 self._set_item_failed(item_id, "Video kimliği alınamadı.")
                 failed += 1
@@ -150,6 +195,7 @@ class DownloadQueue:
             def progress_hook(data: dict, current_item: int = item_id) -> None:
                 nonlocal last_write
                 self._check_cancelled(signal)
+                self._wait_if_paused(signal, pause_signal)
                 now = time.monotonic()
                 status = data.get("status")
                 if status != "downloading" and status != "finished" and status != "error":

@@ -284,6 +284,38 @@ def test_cancel_queued_job_is_idempotent(session_factory, client):
         assert job.items[0].status == "cancelled"
 
 
+def test_active_job_can_be_paused_and_resumed(session_factory, monkeypatch):
+    import app.workers.download_worker as worker
+
+    monkeypatch.setattr(worker, "SessionLocal", session_factory)
+    with session_factory() as session:
+        job = DownloadJob(
+            source_url="https://youtu.be/abc12345678",
+            output_directory="downloads",
+            status=JobStatus.DOWNLOADING.value,
+            total_items=1,
+            items=[DownloadItem(video_id="abc12345678", title="Active", status="downloading")],
+        )
+        session.add(job)
+        session.commit()
+        job_id = job.id
+
+    queue = worker.DownloadQueue()
+    queue.pause(job_id)
+    assert queue._pause_signals[job_id].is_set()
+    with session_factory() as session:
+        job = session.get(DownloadJob, job_id)
+        assert job.status == JobStatus.PAUSED.value
+        assert job.items[0].status == JobStatus.PAUSED.value
+
+    queue.resume(job_id)
+    assert not queue._pause_signals[job_id].is_set()
+    with session_factory() as session:
+        job = session.get(DownloadJob, job_id)
+        assert job.status == JobStatus.DOWNLOADING.value
+        assert job.items[0].status == JobStatus.DOWNLOADING.value
+
+
 def test_active_cancellation_preserves_completed_items(session_factory, monkeypatch, tmp_path):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Event

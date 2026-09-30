@@ -9,6 +9,8 @@ import {
   inspectDemoMedia,
   listDemoDownloads,
   openDemoEvents,
+  pauseDemoDownload,
+  resumeDemoDownload,
   retryDemoDownload,
 } from './demoApi'
 
@@ -50,6 +52,16 @@ export function openDownloadEvents(id: string): EventSource {
 export async function cancelDownload(id: string): Promise<{ id: string; status: string }> {
   if (demoMode) return cancelDemoDownload(id)
   return (await api.post(`/downloads/${encodeURIComponent(id)}/cancel`)).data
+}
+
+export async function pauseDownload(id: string): Promise<{ id: string; status: string }> {
+  if (demoMode) return pauseDemoDownload(id)
+  return (await api.post(`/downloads/${encodeURIComponent(id)}/pause`)).data
+}
+
+export async function resumeDownload(id: string): Promise<{ id: string; status: string }> {
+  if (demoMode) return resumeDemoDownload(id)
+  return (await api.post(`/downloads/${encodeURIComponent(id)}/resume`)).data
 }
 
 export async function retryDownload(id: string): Promise<DownloadJob> {
